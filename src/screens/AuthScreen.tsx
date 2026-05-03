@@ -36,6 +36,7 @@ export function AuthScreen() {
         password,
         options: {
           data: {
+            display_name: cleanName,
             name: cleanName,
           },
         },
@@ -46,17 +47,26 @@ export function AuthScreen() {
         return;
       }
 
-      if (!data.user) {
+      const user = data.user;
+
+      if (!user) {
         setErrorMessage("No se pudo crear el usuario.");
         return;
       }
 
       if (!data.session) {
-        setErrorMessage("Cuenta creada. Confirma tu email.");
+        setErrorMessage("Cuenta creada. Confirma tu email para iniciar sesion.");
         return;
       }
 
-      // ✅ profile se crea automáticamente con trigger
+      const { error: profileError } = await supabase.from("profiles").insert({
+        id: user.id,
+        name: cleanName,
+      });
+
+      if (profileError) {
+        console.error("Error creating profile:", profileError.message);
+      }
     } catch (error) {
       setErrorMessage(
         error instanceof Error ? error.message : "No se pudo crear la cuenta.",
@@ -115,7 +125,7 @@ export function AuthScreen() {
         </Text>
 
         <View style={{ gap: 12, marginTop: 24 }}>
-          {isRegister && (
+          {isRegister ? (
             <TextInput
               autoCapitalize="words"
               onChangeText={setName}
@@ -123,8 +133,7 @@ export function AuthScreen() {
               style={inputStyle}
               value={name}
             />
-          )}
-
+          ) : null}
           <TextInput
             autoCapitalize="none"
             autoCorrect={false}
@@ -134,7 +143,6 @@ export function AuthScreen() {
             style={inputStyle}
             value={email}
           />
-
           <TextInput
             onChangeText={setPassword}
             placeholder="Password"
