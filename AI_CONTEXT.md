@@ -42,21 +42,186 @@ Supabase NO crea profiles automáticamente.
 
 ---
 
-## 🗄️ Base de Datos
+# 🗄️ DATABASE CONTEXT
 
-Tablas principales:
+## 👤 profiles
 
-- profiles (id, name, xp)
-- books
-- book_pages
-- page_content (multi idioma)
-- user_books
-- reading_sessions
-- xp_events
-- categories
-- book_categories
-- book_tags
-- book_tag_relations
+Usuario de la app
+
+* id (uuid, PK, FK → auth.users.id)
+* name (text)
+* avatar_url (text)
+* xp (int, default 0)
+* created_at (timestamp)
+
+---
+
+## 📚 books
+
+Libros disponibles
+
+* id (uuid, PK)
+* title (text, required)
+* author (text)
+* cover_url (text)
+* total_pages (int)
+* difficulty (int → 1 fácil, 2 medio, 3 difícil)
+* estimated_minutes (int)
+* xp_base (int, default 10)
+* created_at (timestamp)
+
+---
+
+## 📄 book_pages
+
+Páginas de cada libro
+
+* id (uuid, PK)
+* book_id (uuid, FK → books.id)
+* page_number (int)
+* UNIQUE(book_id, page_number)
+
+---
+
+## 🌍 page_content
+
+Contenido por idioma
+
+* id (uuid, PK)
+* page_id (uuid, FK → book_pages.id)
+* language (text → 'es', 'en')
+* content (text)
+* UNIQUE(page_id, language)
+
+---
+
+## 📖 user_books
+
+Progreso del usuario en libros
+
+* id (uuid, PK)
+* user_id (uuid, FK → profiles.id)
+* book_id (uuid, FK → books.id)
+* current_page (int, default 0)
+* progress (int, porcentaje)
+* status (text → 'reading', etc)
+* started_at (timestamp)
+* completed_at (timestamp)
+* UNIQUE(user_id, book_id)
+
+---
+
+## 📊 reading_sessions
+
+Sesiones de lectura
+
+* id (uuid, PK)
+* user_id (uuid, FK → profiles.id)
+* book_id (uuid, FK → books.id)
+* minutes (int)
+* pages (int)
+* xp (int)
+* created_at (timestamp)
+
+---
+
+## ⚡ xp_events
+
+Eventos de XP
+
+* id (uuid, PK)
+* user_id (uuid, FK → profiles.id)
+* amount (int)
+* source (text → reading, achievement, etc)
+* reference_id (uuid)
+* created_at (timestamp)
+
+---
+
+## 🟢 categories
+
+Géneros
+
+* id (uuid, PK)
+* name (text)
+* slug (text, unique)
+
+---
+
+## 🔗 book_categories
+
+Relación libros ↔ categorías
+
+* book_id (uuid, FK → books.id)
+* category_id (uuid, FK → categories.id)
+* PK (book_id, category_id)
+
+---
+
+## 🟡 book_tags
+
+Tags UI
+
+* id (uuid, PK)
+* name (text)
+* slug (text, unique)
+
+---
+
+## 🔗 book_tag_relations
+
+Relación libros ↔ tags
+
+* book_id (uuid, FK → books.id)
+* tag_id (uuid, FK → book_tags.id)
+* PK (book_id, tag_id)
+
+---
+
+## 🔁 TRIGGER (AUTO PROFILE)
+
+Función:
+
+* handle_new_user()
+
+Comportamiento:
+
+* Se ejecuta al crear usuario en auth.users
+* Inserta automáticamente en profiles:
+
+  * id = auth.users.id
+  * name = user_metadata.name o 'User'
+
+Trigger:
+
+* after insert on auth.users
+
+---
+
+## ⚠️ REGLAS IMPORTANTES
+
+* profiles se crea AUTOMÁTICO (NO frontend)
+* relaciones usan UUID
+* multi-idioma en page_content
+* progreso separado en user_books
+* XP separado en xp_events
+
+---
+
+## 🧠 MODELO MENTAL
+
+User
+→ profiles
+→ user_books
+→ reading_sessions
+→ xp_events
+
+Books
+→ book_pages
+→ page_content (multi idioma)
+→ categories
+→ tags
+
 
 ---
 

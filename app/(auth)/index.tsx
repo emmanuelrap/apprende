@@ -1,3 +1,6 @@
+// AUTH
+
+import { useRouter } from "expo-router";
 import { useState } from "react";
 import {
   ActivityIndicator,
@@ -8,9 +11,11 @@ import {
   TextInput,
   View,
 } from "react-native";
-import { supabase } from "../services/supabase";
+import { supabase } from "../../src/services/supabase";
 
-export function AuthScreen() {
+export default function AuthScreen() {
+  const router = useRouter();
+
   const [mode, setMode] = useState<"register" | "login">("register");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -35,10 +40,7 @@ export function AuthScreen() {
         email: cleanEmail,
         password,
         options: {
-          data: {
-            display_name: cleanName,
-            name: cleanName,
-          },
+          data: { name: cleanName },
         },
       });
 
@@ -47,26 +49,17 @@ export function AuthScreen() {
         return;
       }
 
-      const user = data.user;
-
-      if (!user) {
+      if (!data.user) {
         setErrorMessage("No se pudo crear el usuario.");
         return;
       }
 
       if (!data.session) {
-        setErrorMessage("Cuenta creada. Confirma tu email para iniciar sesion.");
+        setErrorMessage("Cuenta creada. Confirma tu email.");
         return;
       }
 
-      const { error: profileError } = await supabase.from("profiles").insert({
-        id: user.id,
-        name: cleanName,
-      });
-
-      if (profileError) {
-        console.error("Error creating profile:", profileError.message);
-      }
+      router.replace("/home");
     } catch (error) {
       setErrorMessage(
         error instanceof Error ? error.message : "No se pudo crear la cuenta.",
@@ -95,7 +88,10 @@ export function AuthScreen() {
 
       if (error) {
         setErrorMessage(error.message);
+        return;
       }
+
+      router.replace("/home");
     } catch (error) {
       setErrorMessage(
         error instanceof Error ? error.message : "No se pudo iniciar sesion.",
@@ -112,82 +108,55 @@ export function AuthScreen() {
       behavior={Platform.OS === "ios" ? "padding" : undefined}
       style={{ flex: 1 }}
     >
-      <View
-        style={{
-          flex: 1,
-          justifyContent: "center",
-          paddingHorizontal: 24,
-          backgroundColor: "#F8FAFC",
-        }}
-      >
-        <Text style={{ fontSize: 28, fontWeight: "700", color: "#111827" }}>
+      <View style={{ flex: 1, justifyContent: "center", padding: 24 }}>
+        <Text style={{ fontSize: 28, fontWeight: "700" }}>
           {isRegister ? "Crear cuenta" : "Ingresar"}
         </Text>
 
         <View style={{ gap: 12, marginTop: 24 }}>
-          {isRegister ? (
+          {isRegister && (
             <TextInput
-              autoCapitalize="words"
-              onChangeText={setName}
               placeholder="Nombre"
               style={inputStyle}
               value={name}
+              onChangeText={setName}
             />
-          ) : null}
+          )}
           <TextInput
-            autoCapitalize="none"
-            autoCorrect={false}
-            keyboardType="email-address"
-            onChangeText={setEmail}
             placeholder="Email"
             style={inputStyle}
             value={email}
+            onChangeText={setEmail}
           />
           <TextInput
-            onChangeText={setPassword}
             placeholder="Password"
             secureTextEntry
             style={inputStyle}
             value={password}
+            onChangeText={setPassword}
           />
         </View>
 
         {errorMessage ? (
-          <Text style={{ color: "#B91C1C", marginTop: 14 }}>
-            {errorMessage}
-          </Text>
+          <Text style={{ color: "red", marginTop: 12 }}>{errorMessage}</Text>
         ) : null}
 
         <Pressable
-          disabled={loading}
           onPress={isRegister ? handleRegister : handleLogin}
-          style={{
-            alignItems: "center",
-            backgroundColor: loading ? "#94A3B8" : "#2563EB",
-            borderRadius: 8,
-            marginTop: 20,
-            paddingVertical: 14,
-          }}
+          style={btnStyle}
         >
           {loading ? (
-            <ActivityIndicator color="#FFFFFF" />
+            <ActivityIndicator color="#fff" />
           ) : (
-            <Text style={{ color: "#FFFFFF", fontSize: 16, fontWeight: "700" }}>
+            <Text style={{ color: "#fff" }}>
               {isRegister ? "Registrarse" : "Ingresar"}
             </Text>
           )}
         </Pressable>
 
-        <Pressable
-          disabled={loading}
-          onPress={() => {
-            setErrorMessage("");
-            setMode(isRegister ? "login" : "register");
-          }}
-          style={{ alignItems: "center", marginTop: 16, paddingVertical: 8 }}
-        >
-          <Text style={{ color: "#2563EB", fontSize: 15, fontWeight: "700" }}>
-            {isRegister ? "Ya tengo cuenta" : "Crear cuenta nueva"}
+        <Pressable onPress={() => setMode(isRegister ? "login" : "register")}>
+          <Text style={{ marginTop: 16 }}>
+            {isRegister ? "Ya tengo cuenta" : "Crear cuenta"}
           </Text>
         </Pressable>
       </View>
@@ -196,11 +165,15 @@ export function AuthScreen() {
 }
 
 const inputStyle = {
-  backgroundColor: "#FFFFFF",
-  borderColor: "#CBD5E1",
-  borderRadius: 8,
   borderWidth: 1,
-  fontSize: 16,
-  paddingHorizontal: 14,
-  paddingVertical: 12,
+  padding: 12,
+  borderRadius: 8,
+};
+
+const btnStyle = {
+  marginTop: 20,
+  backgroundColor: "#2563EB",
+  padding: 14,
+  borderRadius: 8,
+  alignItems: "center" as const,
 };
