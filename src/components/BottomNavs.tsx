@@ -29,6 +29,11 @@ export function BottomNav() {
         icon="person-outline"
         onPress={() => router.replace("/profile")}
       />
+      <NavItem
+        label="Admin"
+        icon=""
+        onPress={() => router.replace("/admin/books")}
+      />
     </View>
   );
 }

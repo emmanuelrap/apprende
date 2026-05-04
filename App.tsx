@@ -3,6 +3,7 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { Session } from "@supabase/supabase-js";
 import { useEffect, useState } from "react";
 import { ActivityIndicator, View } from "react-native";
+import Toast from "react-native-toast-message";
 import { RootStackParamList } from "./src/navigation/types";
 import { AuthScreen } from "./src/screens/AuthScreen";
 import { HomeScreen } from "./src/screens/HomeScreen";
@@ -50,6 +51,7 @@ function RootNavigator({ isSignedIn }: { isSignedIn: boolean }) {
           <Stack.Screen name="Auth" component={AuthScreen} />
         )}
       </Stack.Navigator>
+      <Toast />
     </NavigationContainer>
   );
 }

@@ -1,15 +1,32 @@
+
+import { ReadingBar } from "@/src/components/ReadingBar";
 import { useAuth } from "@/src/hooks/useAuth";
+import { BookCompletedScreen } from "@/src/screens/BookCompletedScreen";
 import { supabase } from "@/src/services/supabase";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
-import { ActivityIndicator, Text, TouchableOpacity, View } from "react-native";
+import {
+  ActivityIndicator,
+  ScrollView,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 type Page = {
   id: string;
   pageNumber: number;
-  content: string;
+  contentEs: string;
+  contentEn: string;
 };
+
+type Language = "es" | "en";
+
+const LANGUAGES: { label: string; value: Language }[] = [
+  { label: "Español", value: "es" },
+  { label: "English", value: "en" },
+];
 
 export default function ReaderScreen() {
   const { bookId } = useLocalSearchParams<{ bookId: string }>();
@@ -19,113 +36,96 @@ export default function ReaderScreen() {
   const [page, setPage] = useState<Page | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(0);
+  const [bookXp, setBookXp] = useState(0);
+  const [bookTitle, setBookTitle] = useState("");
+  const [xpBefore, setXpBefore] = useState(0);
+  const [completed, setCompleted] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  // 🧠 tracking sesión
+  const [langTop, setLangTop] = useState<Language>("es");
+  const [langBottom, setLangBottom] = useState<Language>("en");
+
   const startTimeRef = useRef(Date.now());
   const pagesReadRef = useRef(0);
 
-  // 📄 obtener total páginas
-  const getTotalPages = async () => {
-    const { count } = await supabase
-      .from("book_pages")
-      .select("*", { count: "exact", head: true })
-      .eq("book_id", bookId);
-
-    setTotalPages(count || 0);
-  };
-
-  // 📄 obtener página
   const getPage = async (pageNumber: number) => {
     setLoading(true);
-
     const { data, error } = await supabase
       .from("book_pages")
-      .select(
-        `
-        id,
-        page_number,
-        page_content (
-          content,
-          language
-        )
-      `,
-      )
+      .select(`id, page_number, page_content (content, language)`)
       .eq("book_id", bookId)
       .eq("page_number", pageNumber)
       .single();
 
-    if (error) {
-      console.error("Error loading page:", error);
-      return;
-    }
+    if (error) return console.error("Error loading page:", error);
 
-    const content =
-      data.page_content?.find((c: any) => c.language === "es")?.content ?? "";
+    const getContent = (lang: string) =>
+      data.page_content?.find((c: any) => c.language === lang)?.content ?? "";
 
     setPage({
       id: data.id,
       pageNumber: data.page_number,
-      content,
+      contentEs: getContent("es"),
+      contentEn: getContent("en"),
     });
-
     setLoading(false);
   };
 
-  // 🟢 guardar progreso
-  const saveProgress = async (pageNumber: number) => {
+  // 🟢 upsert progreso
+  const saveProgress = async (pageNumber: number, total?: number) => {
     if (!user) return;
-
-    await supabase
-      .from("user_books")
-      .update({
+    const pages = total ?? totalPages;
+    await supabase.from("user_books").upsert(
+      {
+        user_id: user.id,
+        book_id: bookId,
         current_page: pageNumber,
-      })
-      .eq("user_id", user.id)
-      .eq("book_id", bookId);
-  };
-
-  // 🔵 guardar sesión
-  const saveSession = async () => {
-    if (!user) return;
-
-    const minutes = Math.floor((Date.now() - startTimeRef.current) / 60000);
-
-    await supabase.from("reading_sessions").insert({
-      user_id: user.id,
-      book_id: bookId,
-      minutes,
-      pages: pagesReadRef.current,
-      xp: pagesReadRef.current * 5, // ejemplo
-    });
+        progress: pages > 0 ? Math.round((pageNumber / pages) * 100) : 0,
+      },
+      { onConflict: "user_id,book_id" },
+    );
   };
 
   // 🚀 init
   useEffect(() => {
-    if (!bookId) return;
+    if (!bookId || !user) return;
 
-    getTotalPages();
-    getPage(currentPage);
-  }, [bookId]);
+    const init = async () => {
+      const [{ count }, { data: book }, { data: profile }] = await Promise.all([
+        supabase
+          .from("book_pages")
+          .select("*", { count: "exact", head: true })
+          .eq("book_id", bookId),
+        supabase
+          .from("books")
+          .select("title, xp_base, difficulty")
+          .eq("id", bookId)
+          .single(),
+        supabase.from("profiles").select("xp").eq("id", user.id).single(),
+      ]);
 
-  // 🔄 cuando cambia página
+      const total = count || 0;
+      const xp = (book?.xp_base ?? 10) * (book?.difficulty ?? 1);
+
+      setTotalPages(total);
+      setBookXp(xp);
+      setBookTitle(book?.title ?? "");
+      setXpBefore(profile?.xp ?? 0);
+      getPage(currentPage);
+      saveProgress(currentPage, total);
+    };
+
+    init();
+  }, [bookId, user]);
+
+  // 🔄 cada cambio de página después del mount
   useEffect(() => {
-    if (!bookId) return;
-
+    if (!bookId || !user || currentPage === 1) return;
     getPage(currentPage);
     saveProgress(currentPage);
-
     pagesReadRef.current += 1;
   }, [currentPage]);
 
-  // 🔚 salir (guardar sesión)
-  useEffect(() => {
-    return () => {
-      saveSession();
-    };
-  }, []);
-
-  // 👉 siguiente página
   const nextPage = () => {
     if (currentPage < totalPages) {
       setCurrentPage((prev) => prev + 1);
@@ -134,11 +134,8 @@ export default function ReaderScreen() {
     }
   };
 
-  // 👈 página anterior
   const prevPage = () => {
-    if (currentPage > 1) {
-      setCurrentPage((prev) => prev - 1);
-    }
+    if (currentPage > 1) setCurrentPage((prev) => prev - 1);
   };
 
   // 🎉 terminar libro
@@ -147,58 +144,139 @@ export default function ReaderScreen() {
 
     await supabase
       .from("user_books")
-      .update({
-        status: "completed",
-      })
+      .update({ status: "completed", progress: 100 })
       .eq("user_id", user.id)
       .eq("book_id", bookId);
 
+    await supabase.from("reading_sessions").insert({
+      user_id: user.id,
+      book_id: bookId,
+      minutes: Math.floor((Date.now() - startTimeRef.current) / 60000),
+      pages: pagesReadRef.current,
+      xp: bookXp,
+    });
+
     await supabase.from("xp_events").insert({
       user_id: user.id,
-      amount: 100,
+      amount: bookXp,
       source: "book_completed",
       reference_id: bookId,
     });
 
-    await saveSession();
-
-    router.back();
+    setCompleted(true);
   };
 
-  return (
-    <SafeAreaView style={{ flex: 1, padding: 16 }}>
-      {loading || !page ? (
-        <ActivityIndicator />
-      ) : (
-        <>
-          {/* 📄 contenido */}
-          <Text style={{ fontSize: 16, lineHeight: 24 }}>{page.content}</Text>
+  const getContent = (lang: Language) =>
+    lang === "es" ? page?.contentEs : page?.contentEn;
 
-          {/* 📊 footer */}
-          <View
+  // 🌍 selector de idioma
+  const LangSelector = ({
+    selected,
+    onChange,
+  }: {
+    selected: Language;
+    onChange: (l: Language) => void;
+  }) => (
+    <View style={{ flexDirection: "row", gap: 8, marginBottom: 8 }}>
+      {LANGUAGES.map((l) => (
+        <TouchableOpacity
+          key={l.value}
+          onPress={() => onChange(l.value)}
+          style={{
+            paddingHorizontal: 12,
+            paddingVertical: 4,
+            borderRadius: 20,
+            backgroundColor: selected === l.value ? "#000" : "#eee",
+          }}
+        >
+          <Text
             style={{
-              position: "absolute",
-              bottom: 20,
-              left: 20,
-              right: 20,
-              flexDirection: "row",
-              justifyContent: "space-between",
+              color: selected === l.value ? "#fff" : "#000",
+              fontSize: 12,
             }}
           >
-            <TouchableOpacity onPress={prevPage}>
-              <Text>⬅️ Anterior</Text>
-            </TouchableOpacity>
+            {l.label}
+          </Text>
+        </TouchableOpacity>
+      ))}
+    </View>
+  );
 
-            <Text>
-              {currentPage} / {totalPages}
-            </Text>
+  // 🏆 pantalla de celebración
+  if (completed) {
+    return (
+      <BookCompletedScreen
+        xpBefore={xpBefore}
+        xpGained={bookXp}
+        bookTitle={bookTitle}
+        onContinue={() => router.back()}
+      />
+    );
+  }
 
-            <TouchableOpacity onPress={nextPage}>
-              <Text>➡️ Siguiente</Text>
-            </TouchableOpacity>
+  return (
+    <SafeAreaView style={{ flex: 1 }}>
+      <ReadingBar
+        title={bookTitle}
+        currentPage={currentPage}
+        totalPages={totalPages}
+        onSettings={() => {}}
+      />
+
+      {loading || !page ? (
+        <ActivityIndicator style={{ flex: 1 }} />
+      ) : (
+        <View style={{ flex: 1 }}>
+          {/* 📖 mitad superior */}
+          <View
+            style={{
+              flex: 1,
+              padding: 16,
+              borderBottomWidth: 1,
+              borderColor: "#ddd",
+            }}
+          >
+            <LangSelector selected={langTop} onChange={setLangTop} />
+            <ScrollView>
+              <Text style={{ fontSize: 16, lineHeight: 24 }}>
+                {getContent(langTop)}
+              </Text>
+            </ScrollView>
           </View>
-        </>
+
+          {/* 📖 mitad inferior */}
+          <View style={{ flex: 1, padding: 16 }}>
+            <LangSelector selected={langBottom} onChange={setLangBottom} />
+            <ScrollView>
+              <Text style={{ fontSize: 16, lineHeight: 24 }}>
+                {getContent(langBottom)}
+              </Text>
+            </ScrollView>
+          </View>
+        </View>
       )}
+
+      {/* 📊 footer */}
+      <View
+        style={{
+          paddingHorizontal: 20,
+          paddingBottom: 20,
+          flexDirection: "row",
+          justifyContent: "space-between",
+          borderTopWidth: 1,
+          borderColor: "#ddd",
+        }}
+      >
+        <TouchableOpacity onPress={prevPage}>
+          <Text>⬅️ Anterior</Text>
+        </TouchableOpacity>
+        <Text>
+          {currentPage} / {totalPages}
+        </Text>
+        <TouchableOpacity onPress={nextPage}>
+          <Text>➡️ Siguiente</Text>
+        </TouchableOpacity>
+      </View>
     </SafeAreaView>
   );
 }

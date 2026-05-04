@@ -1,10 +1,15 @@
-// src/hooks/useAuth.ts
 import { useEffect, useState } from "react";
 import { supabase } from "../services/supabase";
 
+type Profile = {
+  name: string;
+  avatar_url: string | null;
+  xp: number;
+};
+
 export function useAuth() {
   const [user, setUser] = useState<any>(null);
-  const [name, setName] = useState("");
+  const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -20,18 +25,18 @@ export function useAuth() {
 
       setUser(user);
 
-      const { data: profile } = await supabase
+      const { data: profileData } = await supabase
         .from("profiles")
-        .select("name")
+        .select("name, avatar_url, xp")
         .eq("id", user.id)
         .single();
 
-      setName(profile?.name ?? "");
+      setProfile(profileData ?? null);
       setLoading(false);
     };
 
     load();
   }, []);
 
-  return { user, name, loading };
+  return { user, profile, loading };
 }

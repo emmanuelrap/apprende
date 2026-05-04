@@ -65,7 +65,7 @@ Libros disponibles
 * author (text)
 * cover_url (text)
 * total_pages (int)
-* difficulty (int → 1 fácil, 2 medio, 3 difícil)
+* difficulty (int → 1 A1, 2 A2, 3 B1, 4 B2, 5 C1, 6 C2)
 * estimated_minutes (int)
 * xp_base (int, default 10)
 * created_at (timestamp)
@@ -229,7 +229,7 @@ Books
 
 - Español (es)
 - Inglés (en)
-
+- soporte para ams
 Cada página tiene múltiples idiomas.
 
 ---
