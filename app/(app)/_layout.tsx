@@ -1,5 +1,7 @@
 import { BottomNav } from "@/src/components/BottomNavs";
 import { TopBar } from "@/src/components/TopBar";
+import { useLanguage } from "@/src/hooks/useLanguaje";
+
 import { supabase } from "@/src/services/supabase";
 import { Slot, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
@@ -7,12 +9,14 @@ import { ActivityIndicator, View } from "react-native";
 
 export default function Layout() {
   const router = useRouter();
+  const { prefs, loading: langLoading } = useLanguage();
 
   const [loading, setLoading] = useState(true);
   const [name, setName] = useState("");
 
   useEffect(() => {
     const init = async () => {
+      // 1. Verifica auth
       const {
         data: { user },
       } = await supabase.auth.getUser();
@@ -22,6 +26,7 @@ export default function Layout() {
         return;
       }
 
+      // 2. Carga perfil
       const { data } = await supabase
         .from("profiles")
         .select("name")
@@ -35,19 +40,25 @@ export default function Layout() {
     init();
   }, []);
 
-  if (loading) {
+  // 3. Cuando termine de cargar auth Y idioma, revisa si falta configurar idioma
+  useEffect(() => {
+    if (loading || langLoading) return;
+
+    if (!prefs) {
+      router.replace("/language-setup");
+    }
+  }, [loading, langLoading, prefs]);
+
+  if (loading || langLoading) {
     return (
-      <View
-        style={{
-          flex: 1,
-          justifyContent: "center",
-          alignItems: "center",
-        }}
-      >
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
         <ActivityIndicator />
       </View>
     );
   }
+
+  // No renderiza nada si falta el idioma (evita flash antes del redirect)
+  if (!prefs) return null;
 
   return (
     <View style={{ flex: 1 }}>

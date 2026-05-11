@@ -30,6 +30,11 @@ export function BottomNav() {
         onPress={() => router.replace("/profile")}
       />
       <NavItem
+        label="Vocabulario"
+        icon=""
+        onPress={() => router.replace("/study")}
+      />
+      <NavItem
         label="Admin"
         icon=""
         onPress={() => router.replace("/admin/books")}

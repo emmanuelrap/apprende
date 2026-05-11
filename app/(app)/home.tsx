@@ -1,6 +1,11 @@
-import { useAuth } from "@/src/hooks/useAuth";
-import { useBooks } from "@/src/hooks/useBooks";
+import { SearchInput } from "@/src/components/SearchInput";
+import { TagsTabs } from "@/src/components/TagsTabs";
+import { useInitApp } from "@/src/hooks/useInitApp";
+import { useAuthStore } from "@/src/store/authStore";
+import { useBookStore } from "@/src/store/bookStore";
+import { useFilterStore } from "@/src/store/filterStore";
 import { useRouter } from "expo-router";
+import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   ScrollView,
@@ -21,9 +26,25 @@ const DIFFICULTY: Record<number, string> = {
 
 export default function HomeScreen() {
   const router = useRouter();
-  const { user, profile, loading: authLoading } = useAuth();
-  const { books, loading: booksLoading } = useBooks(user?.id ?? null);
 
+  useInitApp(); //cargar datos iniciales (usuario, libros, gamification...) en estado global
+
+  const { profile, isLoading: authLoading } = useAuthStore();
+  const { books, isLoading: booksLoading } = useBookStore();
+  const { categories, tags } = useFilterStore();
+
+  const [search, setSearch] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+
+  useEffect(() => {
+    console.log("profile", profile);
+    console.log("books", books);
+    console.log("categories", categories);
+    console.log("tags", tags);
+  }, [profile, books, categories, tags]);
+
+  //Si hay usuario logueado, muestra la pantalla principal. Si no, redirige al login.
+  const user = useAuthStore((state) => state.user);
   if (!authLoading && !user) {
     router.replace("/");
     return null;
@@ -34,7 +55,14 @@ export default function HomeScreen() {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: "#F7FAFC" }}>
       <ScrollView contentContainerStyle={{ padding: 16 }}>
-        {/* 👤 perfil */}
+        <SearchInput
+          value={search}
+          onChangeText={setSearch}
+          onFilterPress={() => console.log("abrir filtros")}
+        />
+
+        <TagsTabs selected={selectedCategory} onSelect={setSelectedCategory} />
+        {/* 👤 Datos perfil */}
         <View style={{ marginBottom: 20 }}>
           <Text style={{ fontSize: 20, fontWeight: "700" }}>
             Hola, {profile?.name ?? "👋"}

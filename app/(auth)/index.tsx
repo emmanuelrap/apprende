@@ -1,7 +1,7 @@
 // AUTH
 
 import { useRouter } from "expo-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -22,6 +22,22 @@ export default function AuthScreen() {
   const [password, setPassword] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const [loading, setLoading] = useState(false);
+  const [checkingSession, setCheckingSession] = useState(true);
+
+  useEffect(() => {
+    const checkSession = async () => {
+      const { data } = await supabase.auth.getUser();
+
+      if (data.user) {
+        router.replace("/home");
+        return;
+      }
+
+      setCheckingSession(false);
+    };
+
+    checkSession();
+  }, [router]);
 
   const handleRegister = async () => {
     const cleanName = name.trim();
@@ -102,6 +118,21 @@ export default function AuthScreen() {
   };
 
   const isRegister = mode === "register";
+
+  if (checkingSession) {
+    return (
+      <View
+        style={{
+          flex: 1,
+          justifyContent: "center",
+          alignItems: "center",
+          backgroundColor: "#F7FAFC",
+        }}
+      >
+        <ActivityIndicator size="large" />
+      </View>
+    );
+  }
 
   return (
     <KeyboardAvoidingView
