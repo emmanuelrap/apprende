@@ -6,6 +6,7 @@ import { supabase } from "@/src/services/supabase";
 import { Slot, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import { ActivityIndicator, View } from "react-native";
+import "../../global.css";
 
 export default function Layout() {
   const router = useRouter();

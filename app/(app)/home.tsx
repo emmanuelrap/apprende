@@ -1,4 +1,5 @@
 import { SearchInput } from "@/src/components/SearchInput";
+import { TagSelector } from "@/src/components/TagSelector";
 import { TagsTabs } from "@/src/components/TagsTabs";
 import { useInitApp } from "@/src/hooks/useInitApp";
 import { useAuthStore } from "@/src/store/authStore";
@@ -34,6 +35,7 @@ export default function HomeScreen() {
   const { categories, tags } = useFilterStore();
 
   const [search, setSearch] = useState("");
+  const [selectedTag, setSelectedTag] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
   useEffect(() => {
@@ -42,6 +44,12 @@ export default function HomeScreen() {
     console.log("categories", categories);
     console.log("tags", tags);
   }, [profile, books, categories, tags]);
+
+  useEffect(() => {
+    console.log("selectedCategory", selectedCategory);
+    console.log("selectedTag", selectedTag);
+    console.log("search", search);
+  }, [selectedCategory, selectedTag, search]);
 
   //Si hay usuario logueado, muestra la pantalla principal. Si no, redirige al login.
   const user = useAuthStore((state) => state.user);
@@ -62,6 +70,11 @@ export default function HomeScreen() {
         />
 
         <TagsTabs selected={selectedCategory} onSelect={setSelectedCategory} />
+        <TagSelector
+          tags={tags}
+          selected={selectedTag}
+          onSelect={setSelectedTag}
+        />
         {/* 👤 Datos perfil */}
         <View style={{ marginBottom: 20 }}>
           <Text style={{ fontSize: 20, fontWeight: "700" }}>

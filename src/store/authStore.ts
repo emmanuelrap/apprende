@@ -7,19 +7,29 @@ type Profile = {
   xp: number;
 };
 
+type XpEvent = {
+  id: string;
+  amount: number;
+  source: string;
+  created_at: string;
+};
+
 type AuthStore = {
   user: any | null;
   profile: Profile | null;
+  xpEvents: XpEvent[];
   isLoading: boolean;
 
   init: () => Promise<void>;
   logout: () => Promise<void>;
   reset: () => void;
+  fetchXpEvents: (userId: string) => Promise<void>;
 };
 
 export const useAuthStore = create<AuthStore>((set) => ({
   user: null,
   profile: null,
+  xpEvents: [],
   isLoading: true,
 
   init: async () => {
@@ -41,10 +51,21 @@ export const useAuthStore = create<AuthStore>((set) => ({
     set({ user, profile: profileData ?? null, isLoading: false });
   },
 
-  logout: async () => {
-    await supabase.auth.signOut();
-    set({ user: null, profile: null });
+  fetchXpEvents: async (userId) => {
+    const { data } = await supabase
+      .from("xp_events")
+      .select("*")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false })
+      .limit(20);
+    set({ xpEvents: data ?? [] });
   },
 
-  reset: () => set({ user: null, profile: null, isLoading: false }),
+  logout: async () => {
+    await supabase.auth.signOut();
+    set({ user: null, profile: null, xpEvents: [] });
+  },
+
+  reset: () =>
+    set({ user: null, profile: null, xpEvents: [], isLoading: false }),
 }));

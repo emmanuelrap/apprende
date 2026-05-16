@@ -4,6 +4,7 @@ import { useAuthStore } from "../store/authStore";
 import { useBookStore } from "../store/bookStore";
 import { useFilterStore } from "../store/filterStore";
 import { useGamificationStore } from "../store/gamificationStore";
+import { useReadingStore } from "../store/readingStore";
 import { useVocabularyStore } from "../store/vocabularyStore";
 
 export function useInitApp() {
@@ -37,6 +38,8 @@ export function useInitApp() {
       useGamificationStore.getState().fetchTrophies(user.id);
       useGamificationStore.getState().fetchLevels();
       useVocabularyStore.getState().fetchReviewItems(user.id);
+      useReadingStore.getState().fetchSessions(user.id);
+      useAuthStore.getState().fetchXpEvents(user.id);
     }
   }, [user?.id]);
 }

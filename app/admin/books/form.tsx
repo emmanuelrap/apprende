@@ -1,4 +1,5 @@
 import { supabase } from "@/src/services/supabase";
+import { useFilterStore } from "@/src/store/filterStore";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import {
@@ -29,10 +30,13 @@ const LANGUAGES = [
 export default function AdminBookForm() {
   const router = useRouter();
   const { id } = useLocalSearchParams();
-
   const isEdit = !!id;
 
+  const { categories, tags } = useFilterStore();
+
   const [loading, setLoading] = useState(false);
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
 
   const [form, setForm] = useState({
     title: "",
@@ -43,7 +47,6 @@ export default function AdminBookForm() {
     xp_base: "10",
   });
 
-  // 📄 páginas dinámicas
   const [pages, setPages] = useState([
     {
       contents: [
@@ -77,27 +80,31 @@ export default function AdminBookForm() {
         });
       }
 
-      // 📄 cargar páginas + contenido
+      // cargar categorías seleccionadas
+      const { data: bookCats } = await supabase
+        .from("book_categories")
+        .select("category_id")
+        .eq("book_id", id);
+      if (bookCats) setSelectedCategories(bookCats.map((c) => c.category_id));
+
+      // cargar tags seleccionados
+      const { data: bookTags } = await supabase
+        .from("book_tag_relations")
+        .select("tag_id")
+        .eq("book_id", id);
+      if (bookTags) setSelectedTags(bookTags.map((t) => t.tag_id));
+
+      // cargar páginas
       const { data: pagesData } = await supabase
         .from("book_pages")
-        .select(
-          `
-          id,
-          page_number,
-          page_content (
-            language,
-            content
-          )
-        `,
-        )
+        .select(`id, page_number, page_content (language, content)`)
         .eq("book_id", id)
         .order("page_number", { ascending: true });
 
       if (pagesData) {
-        const mapped = pagesData.map((p: any) => ({
-          contents: p.page_content || [],
-        }));
-        setPages(mapped);
+        setPages(
+          pagesData.map((p: any) => ({ contents: p.page_content || [] })),
+        );
       }
     };
 
@@ -105,7 +112,22 @@ export default function AdminBookForm() {
   }, [id]);
 
   // =====================
-  // ➕ ADD PAGE
+  // 🔀 TOGGLES
+  // =====================
+  const toggleCategory = (id: string) => {
+    setSelectedCategories((prev) =>
+      prev.includes(id) ? prev.filter((c) => c !== id) : [...prev, id],
+    );
+  };
+
+  const toggleTag = (id: string) => {
+    setSelectedTags((prev) =>
+      prev.includes(id) ? prev.filter((t) => t !== id) : [...prev, id],
+    );
+  };
+
+  // =====================
+  // ➕ PÁGINAS / IDIOMAS
   // =====================
   const addPage = () => {
     setPages([
@@ -119,41 +141,30 @@ export default function AdminBookForm() {
     ]);
   };
 
-  // =====================
-  // ➕ ADD LANGUAGE
-  // =====================
   const addLanguage = (pageIndex: number, lang: string) => {
     const newPages = [...pages];
-
     const exists = newPages[pageIndex].contents.find(
       (c) => c.language === lang,
     );
-
     if (exists) return;
-
-    newPages[pageIndex].contents.push({
-      language: lang,
-      content: "",
-    });
-
+    newPages[pageIndex].contents.push({ language: lang, content: "" });
     setPages(newPages);
   };
 
-  // =====================
-  // ✏️ UPDATE CONTENT
-  // =====================
   const updateContent = (pageIndex: number, lang: string, value: string) => {
     const newPages = [...pages];
-
     const item = newPages[pageIndex].contents.find((c) => c.language === lang);
-
     if (item) item.content = value;
-
     setPages(newPages);
   };
 
+  const removePage = (index: number) => {
+    if (pages.length === 1) return;
+    setPages(pages.filter((_, i) => i !== index));
+  };
+
   // =====================
-  // 💾 SAVE (FIXED 🔥)
+  // 💾 SAVE
   // =====================
   const handleSave = async () => {
     if (!form.title) {
@@ -164,13 +175,8 @@ export default function AdminBookForm() {
     setLoading(true);
 
     try {
-      let bookId = id;
+      let bookId = id as string;
 
-      console.log("📘 START SAVE");
-
-      // =====================
-      // 📘 CREATE / UPDATE BOOK
-      // =====================
       if (!isEdit) {
         const { data, error } = await supabase
           .from("books")
@@ -187,9 +193,7 @@ export default function AdminBookForm() {
           .single();
 
         if (error) throw error;
-
         bookId = data.id;
-        console.log("✅ BOOK CREATED:", bookId);
       } else {
         await supabase.from("book_pages").delete().eq("book_id", id);
 
@@ -207,20 +211,36 @@ export default function AdminBookForm() {
           .eq("id", id);
 
         if (error) throw error;
+
+        // limpiar relaciones anteriores
+        await supabase.from("book_categories").delete().eq("book_id", id);
+        await supabase.from("book_tag_relations").delete().eq("book_id", id);
       }
 
       if (!bookId) throw new Error("No bookId");
 
-      // =====================
-      // 📄 INSERT PAGES
-      // =====================
+      // guardar categorías
+      if (selectedCategories.length > 0) {
+        await supabase.from("book_categories").insert(
+          selectedCategories.map((category_id) => ({
+            book_id: bookId,
+            category_id,
+          })),
+        );
+      }
+
+      // guardar tags
+      if (selectedTags.length > 0) {
+        await supabase
+          .from("book_tag_relations")
+          .insert(selectedTags.map((tag_id) => ({ book_id: bookId, tag_id })));
+      }
+
+      // guardar páginas
       for (let i = 0; i < pages.length; i++) {
         const { data: pageData, error: pageError } = await supabase
           .from("book_pages")
-          .insert({
-            book_id: bookId,
-            page_number: i + 1,
-          })
+          .insert({ book_id: bookId, page_number: i + 1 })
           .select()
           .single();
 
@@ -238,7 +258,6 @@ export default function AdminBookForm() {
           const { error: contentError } = await supabase
             .from("page_content")
             .insert(contents);
-
           if (contentError) throw contentError;
         }
       }
@@ -264,7 +283,7 @@ export default function AdminBookForm() {
 
       <Text>Título *</Text>
       <TextInput
-        placeholder="Ej: The Little Prince"
+        placeholder=""
         value={form.title}
         onChangeText={(v) => setForm({ ...form, title: v })}
         style={input}
@@ -272,7 +291,7 @@ export default function AdminBookForm() {
 
       <Text>Autor</Text>
       <TextInput
-        placeholder="Ej: Antoine de Saint-Exupéry"
+        placeholder=""
         value={form.author}
         onChangeText={(v) => setForm({ ...form, author: v })}
         style={input}
@@ -286,8 +305,40 @@ export default function AdminBookForm() {
         style={input}
       />
 
-      <Text>Dificultad</Text>
-      <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+      {/* Minutos y XP */}
+      <View style={{ flexDirection: "row", gap: 10 }}>
+        <View style={{ flex: 1 }}>
+          <Text>Minutos estimados</Text>
+          <TextInput
+            placeholder=""
+            value={form.estimated_minutes}
+            keyboardType="numeric"
+            onChangeText={(v) => setForm({ ...form, estimated_minutes: v })}
+            style={input}
+          />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text>XP base</Text>
+          <TextInput
+            placeholder="10"
+            value={form.xp_base}
+            keyboardType="numeric"
+            onChangeText={(v) => setForm({ ...form, xp_base: v })}
+            style={input}
+          />
+        </View>
+      </View>
+
+      {/* Dificultad */}
+      <Text style={{ marginBottom: 6 }}>Dificultad</Text>
+      <View
+        style={{
+          flexDirection: "row",
+          flexWrap: "wrap",
+          gap: 8,
+          marginBottom: 16,
+        }}
+      >
         {LEVELS.map((lvl) => (
           <TouchableOpacity
             key={lvl.value}
@@ -303,9 +354,7 @@ export default function AdminBookForm() {
             }}
           >
             <Text
-              style={{
-                color: form.difficulty === lvl.value ? "#FFF" : "#000",
-              }}
+              style={{ color: form.difficulty === lvl.value ? "#FFF" : "#000" }}
             >
               {lvl.label}
             </Text>
@@ -313,16 +362,111 @@ export default function AdminBookForm() {
         ))}
       </View>
 
-      {/* 📄 PAGES */}
-      <Text style={{ marginTop: 20, fontWeight: "700" }}>Páginas</Text>
+      {/* Categorías */}
+      <Text style={{ fontWeight: "700", marginBottom: 6 }}>Categorías</Text>
+      <View
+        style={{
+          flexDirection: "row",
+          flexWrap: "wrap",
+          gap: 8,
+          marginBottom: 16,
+        }}
+      >
+        {categories.map((cat) => {
+          const selected = selectedCategories.includes(cat.id);
+          return (
+            <TouchableOpacity
+              key={cat.id}
+              onPress={() => toggleCategory(cat.id)}
+              style={{
+                paddingHorizontal: 12,
+                paddingVertical: 6,
+                borderRadius: 20,
+                borderWidth: 1,
+                borderColor: selected ? "#6366F1" : "#CBD5E1",
+                backgroundColor: selected ? "#6366F1" : "#FFF",
+              }}
+            >
+              <Text
+                style={{ fontSize: 13, color: selected ? "#FFF" : "#64748B" }}
+              >
+                {cat.name}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+
+      {/* Tags */}
+      <Text style={{ fontWeight: "700", marginBottom: 6 }}>Tags</Text>
+      <View
+        style={{
+          flexDirection: "row",
+          flexWrap: "wrap",
+          gap: 8,
+          marginBottom: 16,
+        }}
+      >
+        {tags.map((tag) => {
+          const selected = selectedTags.includes(tag.id);
+          return (
+            <TouchableOpacity
+              key={tag.id}
+              onPress={() => toggleTag(tag.id)}
+              style={{
+                paddingHorizontal: 12,
+                paddingVertical: 6,
+                borderRadius: 20,
+                borderWidth: 1,
+                borderColor: selected ? "#16A34A" : "#CBD5E1",
+                backgroundColor: selected ? "#16A34A" : "#FFF",
+              }}
+            >
+              <Text
+                style={{ fontSize: 13, color: selected ? "#FFF" : "#64748B" }}
+              >
+                {tag.name}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+
+      {/* Páginas */}
+      <Text
+        style={{
+          marginTop: 8,
+          fontWeight: "700",
+          fontSize: 16,
+          marginBottom: 8,
+        }}
+      >
+        Páginas
+      </Text>
 
       {pages.map((page, index) => (
         <View key={index} style={card}>
-          <Text style={{ fontWeight: "700" }}>Página {index + 1}</Text>
+          <View
+            style={{
+              flexDirection: "row",
+              justifyContent: "space-between",
+              marginBottom: 8,
+            }}
+          >
+            <Text style={{ fontWeight: "700" }}>Página {index + 1}</Text>
+            {pages.length > 1 && (
+              <TouchableOpacity onPress={() => removePage(index)}>
+                <Text style={{ color: "#EF4444", fontSize: 13 }}>Eliminar</Text>
+              </TouchableOpacity>
+            )}
+          </View>
 
           {page.contents.map((c, i) => (
             <View key={i}>
-              <Text>{c.language.toUpperCase()}</Text>
+              <Text style={{ fontSize: 12, color: "#64748B", marginBottom: 4 }}>
+                {LANGUAGES.find((l) => l.value === c.language)?.label ??
+                  c.language.toUpperCase()}
+              </Text>
               <TextInput
                 multiline
                 value={c.content}
@@ -333,17 +477,29 @@ export default function AdminBookForm() {
             </View>
           ))}
 
-          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
-            {LANGUAGES.map((lang) => (
-              <TouchableOpacity
-                key={lang.value}
-                onPress={() => addLanguage(index, lang.value)}
-                style={chip}
-              >
-                <Text>+ {lang.label}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
+          {/* idiomas en scroll horizontal */}
+          <Text style={{ fontSize: 12, color: "#94A3B8", marginBottom: 6 }}>
+            + Agregar idioma
+          </Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+            <View style={{ flexDirection: "row", gap: 8 }}>
+              {LANGUAGES.map((lang) => {
+                const already = page.contents.find(
+                  (c) => c.language === lang.value,
+                );
+                return (
+                  <TouchableOpacity
+                    key={lang.value}
+                    onPress={() => addLanguage(index, lang.value)}
+                    style={[chip, already && { opacity: 0.4 }]}
+                    disabled={!!already}
+                  >
+                    <Text style={{ fontSize: 13 }}>{lang.label}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </ScrollView>
         </View>
       ))}
 
@@ -351,7 +507,10 @@ export default function AdminBookForm() {
         <Text style={{ color: "#078F83" }}>+ Agregar página</Text>
       </TouchableOpacity>
 
-      <TouchableOpacity onPress={handleSave} style={button}>
+      <TouchableOpacity
+        onPress={handleSave}
+        style={[button, { marginBottom: 40 }]}
+      >
         <Text style={{ color: "#FFF" }}>
           {loading ? "Guardando..." : "Guardar libro"}
         </Text>
@@ -360,7 +519,6 @@ export default function AdminBookForm() {
   );
 }
 
-// 🎨 styles
 const input = {
   borderWidth: 1,
   borderColor: "#CBD5E1",
@@ -397,6 +555,7 @@ const buttonOutline = {
 const chip = {
   borderWidth: 1,
   borderColor: "#CBD5E1",
-  padding: 6,
-  borderRadius: 6,
+  padding: 8,
+  borderRadius: 8,
+  backgroundColor: "#FFF",
 };

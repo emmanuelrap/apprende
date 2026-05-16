@@ -9,13 +9,26 @@ type UserBook = {
   status: "reading" | "completed" | "paused";
 };
 
+type ReadingSession = {
+  id: string;
+  book_id: string;
+  minutes: number;
+  pages: number;
+  xp: number;
+  created_at: string;
+  books?: { title: string };
+  reset: () => void;
+};
+
 type ReadingStore = {
   userBooks: UserBook[];
   currentReading: UserBook | null;
   currentPage: number;
   currentContent: { es: string; en: string } | null;
   isLoading: boolean;
+  sessions: ReadingSession[];
 
+  fetchSessions: (userId: string) => Promise<void>;
   fetchUserBooks: (userId: string) => Promise<void>;
   startBook: (userId: string, bookId: string) => Promise<void>;
   updateProgress: (
@@ -39,6 +52,17 @@ export const useReadingStore = create<ReadingStore>((set, get) => ({
   currentPage: 1,
   currentContent: null,
   isLoading: false,
+  sessions: [],
+
+  fetchSessions: async (userId) => {
+    const { data } = await supabase
+      .from("reading_sessions")
+      .select("*, books(title)")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false })
+      .limit(20);
+    set({ sessions: data ?? [] });
+  },
 
   fetchUserBooks: async (userId) => {
     set({ isLoading: true });
@@ -110,4 +134,13 @@ export const useReadingStore = create<ReadingStore>((set, get) => ({
       source: "reading",
     });
   },
+  reset: () =>
+    set({
+      userBooks: [],
+      currentReading: null,
+      currentPage: 1,
+      currentContent: null,
+      sessions: [],
+      isLoading: false,
+    }),
 }));

@@ -1,11 +1,20 @@
-import { useAuth } from "@/src/hooks/useAuth";
-import { useProfileStats } from "@/src/hooks/useProfileStats";
+import { useAuthStore } from "@/src/store/authStore";
+import { useGamificationStore } from "@/src/store/gamificationStore";
+import { useReadingStore } from "@/src/store/readingStore";
 import { ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function Profile() {
-  const { user, profile } = useAuth();
-  const { stats, loading } = useProfileStats(user?.id ?? null);
+  const { profile, xpEvents } = useAuthStore();
+  const { userBooks, sessions } = useReadingStore();
+  const { userTrophies } = useGamificationStore();
+
+  const booksCompleted = userBooks.filter(
+    (b) => b.status === "completed",
+  ).length;
+  const booksReading = userBooks.filter((b) => b.status === "reading").length;
+  const totalMinutes = sessions.reduce((acc, s) => acc + s.minutes, 0);
+  const totalPages = sessions.reduce((acc, s) => acc + s.pages, 0);
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: "#F7FAFC" }}>
@@ -36,14 +45,10 @@ export default function Profile() {
         {/* 📊 stats */}
         <View style={{ flexDirection: "row", gap: 10, marginBottom: 24 }}>
           {[
-            {
-              label: "Completados",
-              value: stats?.booksCompleted ?? 0,
-              emoji: "✅",
-            },
-            { label: "Leyendo", value: stats?.booksReading ?? 0, emoji: "📖" },
-            { label: "Minutos", value: stats?.totalMinutes ?? 0, emoji: "⏱" },
-            { label: "Páginas", value: stats?.totalPages ?? 0, emoji: "📄" },
+            { label: "Completados", value: booksCompleted, emoji: "✅" },
+            { label: "Leyendo", value: booksReading, emoji: "📖" },
+            { label: "Minutos", value: totalMinutes, emoji: "⏱" },
+            { label: "Páginas", value: totalPages, emoji: "📄" },
           ].map((s) => (
             <View
               key={s.label}
@@ -62,13 +67,77 @@ export default function Profile() {
           ))}
         </View>
 
+        {/* 🏆 trofeos */}
+        <Text style={{ fontWeight: "700", fontSize: 16, marginBottom: 10 }}>
+          Trofeos
+        </Text>
+        <View
+          style={{
+            flexDirection: "row",
+            flexWrap: "wrap",
+            gap: 8,
+            marginBottom: 24,
+          }}
+        >
+          {userTrophies.length === 0 && (
+            <Text style={{ color: "#94A3B8", fontSize: 13 }}>
+              Aún no tienes trofeos
+            </Text>
+          )}
+          {userTrophies.map((t) => (
+            <View
+              key={t.id}
+              style={{
+                backgroundColor: "#fff",
+                borderRadius: 12,
+                padding: 12,
+                alignItems: "center",
+                width: 90,
+              }}
+            >
+              <Text style={{ fontSize: 24 }}>{t.icon}</Text>
+              <Text
+                style={{
+                  fontSize: 11,
+                  fontWeight: "600",
+                  textAlign: "center",
+                  marginTop: 4,
+                }}
+              >
+                {t.name}
+              </Text>
+              <Text
+                style={{
+                  fontSize: 10,
+                  marginTop: 2,
+                  color:
+                    t.rarity === "legendary"
+                      ? "#F59E0B"
+                      : t.rarity === "epic"
+                        ? "#8B5CF6"
+                        : t.rarity === "rare"
+                          ? "#3B82F6"
+                          : "#94A3B8",
+                }}
+              >
+                {t.rarity}
+              </Text>
+            </View>
+          ))}
+        </View>
+
         {/* 📚 sesiones */}
         <Text style={{ fontWeight: "700", fontSize: 16, marginBottom: 10 }}>
           Sesiones de lectura
         </Text>
-        {stats?.sessions.map((s, i) => (
+        {sessions.length === 0 && (
+          <Text style={{ color: "#94A3B8", fontSize: 13, marginBottom: 16 }}>
+            Aún no tienes sesiones
+          </Text>
+        )}
+        {sessions.map((s) => (
           <View
-            key={i}
+            key={s.id}
             style={{
               backgroundColor: "#fff",
               borderRadius: 10,
@@ -106,9 +175,14 @@ export default function Profile() {
         >
           Historial de XP
         </Text>
-        {stats?.xpEvents.map((e, i) => (
+        {xpEvents.length === 0 && (
+          <Text style={{ color: "#94A3B8", fontSize: 13 }}>
+            Aún no tienes eventos de XP
+          </Text>
+        )}
+        {xpEvents.map((e) => (
           <View
-            key={i}
+            key={e.id}
             style={{
               backgroundColor: "#fff",
               borderRadius: 10,
