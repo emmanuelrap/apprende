@@ -1,8 +1,6 @@
-
+import { PageContent } from "@/src/components/PageContent";
 import { ReadingBar } from "@/src/components/ReadingBar";
-import { useAuth } from "@/src/hooks/useAuth";
 import { BookCompletedScreen } from "@/src/screens/BookCompletedScreen";
-import { supabase } from "@/src/services/supabase";
 import { useAuthStore } from "@/src/store/authStore";
 import { useGamificationStore } from "@/src/store/gamificationStore";
 import { useReadingStore } from "@/src/store/readingStore";
@@ -27,19 +25,24 @@ type Page = {
 type Language = "es" | "en";
 
 const LANGUAGES: { label: string; value: Language }[] = [
-  { label: "Español", value: "es" },
   { label: "English", value: "en" },
+  { label: "Español", value: "es" },
 ];
 
 export default function ReaderScreen() {
   const { bookId } = useLocalSearchParams<{ bookId: string }>();
   const router = useRouter();
-  const { user } = useAuth();
+
+  const user = useAuthStore((state) => state.user);
   const fetchXpEvents = useAuthStore((state) => state.fetchXpEvents);
   const checkTrophies = useGamificationStore((state) => state.checkTrophies);
   const fetchTrophies = useGamificationStore((state) => state.fetchTrophies);
   const fetchUserBooks = useReadingStore((state) => state.fetchUserBooks);
   const fetchSessions = useReadingStore((state) => state.fetchSessions);
+  const initReader = useReadingStore((state) => state.initReader);
+  const saveProgress = useReadingStore((state) => state.saveProgress);
+  const finishBook = useReadingStore((state) => state.finishBook);
+  const getPage = useReadingStore((state) => state.getPage);
 
   const [page, setPage] = useState<Page | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
@@ -49,98 +52,56 @@ export default function ReaderScreen() {
   const [xpBefore, setXpBefore] = useState(0);
   const [completed, setCompleted] = useState(false);
   const [loading, setLoading] = useState(true);
-
-  const [langTop, setLangTop] = useState<Language>("es");
-  const [langBottom, setLangBottom] = useState<Language>("en");
+  const [langTop, setLangTop] = useState<Language>("en");
+  const [langBottom, setLangBottom] = useState<Language>("es");
+  // agrega este estado
+  const [activeParagraph, setActiveParagraph] = useState<number | null>(null);
 
   const startTimeRef = useRef(Date.now());
   const pagesReadRef = useRef(0);
 
-  const getPage = useCallback(async (pageNumber: number) => {
-    setLoading(true);
-    const { data, error } = await supabase
-      .from("book_pages")
-      .select(`id, page_number, page_content (content, language)`)
-      .eq("book_id", bookId)
-      .eq("page_number", pageNumber)
-      .single();
+  const loadPage = useCallback(
+    async (pageNumber: number) => {
+      setLoading(true);
+      const data = await getPage(bookId, pageNumber);
+      if (data) setPage(data);
+      setLoading(false);
+    },
+    [bookId, getPage],
+  );
 
-    if (error) return console.error("Error loading page:", error);
-
-    const getContent = (lang: string) =>
-      data.page_content?.find((c: any) => c.language === lang)?.content ?? "";
-
-    setPage({
-      id: data.id,
-      pageNumber: data.page_number,
-      contentEs: getContent("es"),
-      contentEn: getContent("en"),
-    });
-    setLoading(false);
-  }, [bookId]);
-
-  // 🟢 upsert progreso
-  const saveProgress = useCallback(async (pageNumber: number, total?: number) => {
-    if (!user) return;
-    const pages = total ?? totalPages;
-    const { error } = await supabase.from("user_books").upsert(
-      {
-        user_id: user.id,
-        book_id: bookId,
-        current_page: pageNumber,
-        progress: pages > 0 ? Math.round((pageNumber / pages) * 100) : 0,
-        status: "reading",
-      },
-      { onConflict: "user_id,book_id" },
-    );
-    if (error) console.error("[Reader] saveProgress error:", error);
-  }, [bookId, totalPages, user]);
-
-  // 🚀 init
+  // init
   useEffect(() => {
     if (!bookId || !user) return;
-
     const init = async () => {
-      const [{ count }, { data: book }, { data: profile }] = await Promise.all([
-        supabase
-          .from("book_pages")
-          .select("*", { count: "exact", head: true })
-          .eq("book_id", bookId),
-        supabase
-          .from("books")
-          .select("title, xp_base, difficulty")
-          .eq("id", bookId)
-          .single(),
-        supabase.from("profiles").select("xp").eq("id", user.id).single(),
-      ]);
-
-      const total = count || 0;
-      const xp = (book?.xp_base ?? 10) * (book?.difficulty ?? 1);
-
-      setTotalPages(total);
-      setBookXp(xp);
-      setBookTitle(book?.title ?? "");
-      setXpBefore(profile?.xp ?? 0);
-      getPage(currentPage);
-      saveProgress(currentPage, total);
+      const { totalPages, bookXp, bookTitle, xpBefore } = await initReader(
+        bookId,
+        user.id,
+      );
+      setTotalPages(totalPages);
+      setBookXp(bookXp);
+      setBookTitle(bookTitle);
+      setXpBefore(xpBefore);
+      await loadPage(1);
+      await saveProgress(user.id, bookId, 1, totalPages);
     };
-
     init();
-  }, [bookId, currentPage, getPage, saveProgress, user]);
+  }, [bookId, user]);
 
-  // 🔄 cada cambio de página después del mount
+  // cambio de página
   useEffect(() => {
+    setActiveParagraph(null);
     if (!bookId || !user || currentPage === 1) return;
-    getPage(currentPage);
-    saveProgress(currentPage);
+    loadPage(currentPage);
+    saveProgress(user.id, bookId, currentPage, totalPages);
     pagesReadRef.current += 1;
-  }, [bookId, currentPage, getPage, saveProgress, user]);
+  }, [currentPage]);
 
   const nextPage = () => {
     if (currentPage < totalPages) {
       setCurrentPage((prev) => prev + 1);
     } else {
-      finishBook();
+      handleFinish();
     }
   };
 
@@ -148,41 +109,16 @@ export default function ReaderScreen() {
     if (currentPage > 1) setCurrentPage((prev) => prev - 1);
   };
 
-  // 🎉 terminar libro
-  const finishBook = async () => {
+  const handleFinish = async () => {
     if (!user) return;
 
-    const { error: completeError } = await supabase
-      .from("user_books")
-      .upsert({
-        user_id: user.id,
-        book_id: bookId,
-        current_page: totalPages,
-        status: "completed",
-        progress: 100,
-        completed_at: new Date().toISOString(),
-      }, { onConflict: "user_id,book_id" });
-    if (completeError) {
-      console.error("[Reader] complete user_books error:", completeError);
-      return;
-    }
-
-    const { error: sessionError } = await supabase.from("reading_sessions").insert({
-      user_id: user.id,
-      book_id: bookId,
-      minutes: Math.floor((Date.now() - startTimeRef.current) / 60000),
-      pages: pagesReadRef.current,
-      xp: bookXp,
-    });
-    if (sessionError) console.error("[Reader] reading_sessions insert error:", sessionError);
-
-    const { error: xpError } = await supabase.from("xp_events").insert({
-      user_id: user.id,
-      amount: bookXp,
-      source: "book_completed",
-      reference_id: bookId,
-    });
-    if (xpError) console.error("[Reader] xp_events insert error:", xpError);
+    await finishBook(
+      user.id,
+      bookId,
+      bookXp,
+      startTimeRef.current,
+      pagesReadRef.current,
+    );
 
     await checkTrophies(user.id);
     await Promise.all([
@@ -198,7 +134,6 @@ export default function ReaderScreen() {
   const getContent = (lang: Language) =>
     lang === "es" ? page?.contentEs : page?.contentEn;
 
-  // 🌍 selector de idioma
   const LangSelector = ({
     selected,
     onChange,
@@ -231,7 +166,6 @@ export default function ReaderScreen() {
     </View>
   );
 
-  // 🏆 pantalla de celebración
   if (completed) {
     return (
       <BookCompletedScreen
@@ -256,7 +190,7 @@ export default function ReaderScreen() {
         <ActivityIndicator style={{ flex: 1 }} />
       ) : (
         <View style={{ flex: 1 }}>
-          {/* 📖 mitad superior */}
+          {/* mitad superior */}
           <View
             style={{
               flex: 1,
@@ -267,25 +201,36 @@ export default function ReaderScreen() {
           >
             <LangSelector selected={langTop} onChange={setLangTop} />
             <ScrollView>
-              <Text style={{ fontSize: 16, lineHeight: 24 }}>
-                {getContent(langTop)}
-              </Text>
+              <PageContent
+                content={getContent(langTop) ?? ""}
+                language={langTop}
+                bookId={bookId}
+                pageId={page?.id ?? ""}
+                activeParagraph={activeParagraph}
+                onParagraphPress={setActiveParagraph}
+              />
             </ScrollView>
           </View>
 
-          {/* 📖 mitad inferior */}
+          {/* mitad inferior */}
           <View style={{ flex: 1, padding: 16 }}>
             <LangSelector selected={langBottom} onChange={setLangBottom} />
             <ScrollView>
-              <Text style={{ fontSize: 16, lineHeight: 24 }}>
-                {getContent(langBottom)}
-              </Text>
+              <PageContent
+                content={getContent(langBottom) ?? ""}
+                language={langBottom}
+                bookId={bookId}
+                pageId={page?.id ?? ""}
+                readonly
+                activeParagraph={activeParagraph}
+                onParagraphPress={setActiveParagraph}
+              />
             </ScrollView>
           </View>
         </View>
       )}
 
-      {/* 📊 footer */}
+      {/* footer */}
       <View
         style={{
           paddingHorizontal: 20,
@@ -303,7 +248,9 @@ export default function ReaderScreen() {
           {currentPage} / {totalPages}
         </Text>
         <TouchableOpacity onPress={nextPage}>
-          <Text>➡️ Siguiente</Text>
+          <Text>
+            ➡️ {currentPage === totalPages ? "Terminar" : "Siguiente"}
+          </Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
