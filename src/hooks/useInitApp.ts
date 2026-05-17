@@ -34,12 +34,20 @@ export function useInitApp() {
 
   useEffect(() => {
     if (user?.id) {
-      useBookStore.getState().fetchBooks();
-      useGamificationStore.getState().fetchTrophies(user.id);
-      useGamificationStore.getState().fetchLevels();
-      useVocabularyStore.getState().fetchReviewItems(user.id);
-      useReadingStore.getState().fetchSessions(user.id);
-      useAuthStore.getState().fetchXpEvents(user.id);
+      const initUserData = async () => {
+        await useGamificationStore.getState().checkTrophies(user.id);
+        await Promise.all([
+          useBookStore.getState().fetchBooks(),
+          useGamificationStore.getState().fetchTrophies(user.id),
+          useGamificationStore.getState().fetchLevels(),
+          useVocabularyStore.getState().fetchReviewItems(user.id),
+          useReadingStore.getState().fetchSessions(user.id),
+          useReadingStore.getState().fetchUserBooks(user.id),
+          useAuthStore.getState().fetchXpEvents(user.id),
+        ]);
+      };
+
+      initUserData();
     }
   }, [user?.id]);
 }

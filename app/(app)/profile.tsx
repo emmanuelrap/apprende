@@ -1,10 +1,12 @@
+import { useProfileBootstrap } from "@/src/hooks/useProfileBootstrap";
 import { useAuthStore } from "@/src/store/authStore";
 import { useGamificationStore } from "@/src/store/gamificationStore";
 import { useReadingStore } from "@/src/store/readingStore";
-import { ScrollView, Text, View } from "react-native";
+import { ActivityIndicator, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function Profile() {
+  const { loading } = useProfileBootstrap();
   const { profile, xpEvents } = useAuthStore();
   const { userBooks, sessions } = useReadingStore();
   const { userTrophies } = useGamificationStore();
@@ -18,6 +20,11 @@ export default function Profile() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: "#F7FAFC" }}>
+      {loading && (
+        <View style={{ paddingTop: 12, alignItems: "center" }}>
+          <ActivityIndicator />
+        </View>
+      )}
       <ScrollView contentContainerStyle={{ padding: 16 }}>
         {/* 👤 cabecera */}
         <View style={{ alignItems: "center", marginBottom: 24 }}>

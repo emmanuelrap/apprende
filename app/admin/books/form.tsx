@@ -277,6 +277,12 @@ export default function AdminBookForm() {
   // =====================
   return (
     <ScrollView style={{ padding: 16 }}>
+      <View className="mb-4 rounded-xl bg-emerald-500 p-3">
+        <Text className="font-bold text-white">
+          Prueba Tailwind activa (admin/books/form)
+        </Text>
+      </View>
+
       <Text style={{ fontSize: 20, fontWeight: "700", marginBottom: 16 }}>
         {isEdit ? "Editar libro" : "Nuevo libro"}
       </Text>

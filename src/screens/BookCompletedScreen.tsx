@@ -44,7 +44,7 @@ export function BookCompletedScreen({
     }).start();
 
     return () => xpCountAnim.removeAllListeners();
-  }, [levelInfo]);
+  }, [barAnim, levelInfo, xpCountAnim, xpGained]);
 
   const barWidth = barAnim.interpolate({
     inputRange: [0, 100],
@@ -53,13 +53,17 @@ export function BookCompletedScreen({
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: "#1E1B4B" }}>
-      <LottieView
-        source={require("../../assets/animations/confetti.json")}
-        autoPlay
-        loop={true}
+      <View
         pointerEvents="none"
         style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }}
-      />
+      >
+        <LottieView
+          source={require("../../assets/animations/confetti.json")}
+          autoPlay
+          loop={true}
+          style={{ flex: 1 }}
+        />
+      </View>
 
       {/* Contenido centrado verticalmente */}
       <View

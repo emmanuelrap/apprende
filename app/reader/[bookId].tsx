@@ -3,8 +3,11 @@ import { ReadingBar } from "@/src/components/ReadingBar";
 import { useAuth } from "@/src/hooks/useAuth";
 import { BookCompletedScreen } from "@/src/screens/BookCompletedScreen";
 import { supabase } from "@/src/services/supabase";
+import { useAuthStore } from "@/src/store/authStore";
+import { useGamificationStore } from "@/src/store/gamificationStore";
+import { useReadingStore } from "@/src/store/readingStore";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   ScrollView,
@@ -32,6 +35,11 @@ export default function ReaderScreen() {
   const { bookId } = useLocalSearchParams<{ bookId: string }>();
   const router = useRouter();
   const { user } = useAuth();
+  const fetchXpEvents = useAuthStore((state) => state.fetchXpEvents);
+  const checkTrophies = useGamificationStore((state) => state.checkTrophies);
+  const fetchTrophies = useGamificationStore((state) => state.fetchTrophies);
+  const fetchUserBooks = useReadingStore((state) => state.fetchUserBooks);
+  const fetchSessions = useReadingStore((state) => state.fetchSessions);
 
   const [page, setPage] = useState<Page | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
@@ -48,7 +56,7 @@ export default function ReaderScreen() {
   const startTimeRef = useRef(Date.now());
   const pagesReadRef = useRef(0);
 
-  const getPage = async (pageNumber: number) => {
+  const getPage = useCallback(async (pageNumber: number) => {
     setLoading(true);
     const { data, error } = await supabase
       .from("book_pages")
@@ -69,22 +77,24 @@ export default function ReaderScreen() {
       contentEn: getContent("en"),
     });
     setLoading(false);
-  };
+  }, [bookId]);
 
   // 🟢 upsert progreso
-  const saveProgress = async (pageNumber: number, total?: number) => {
+  const saveProgress = useCallback(async (pageNumber: number, total?: number) => {
     if (!user) return;
     const pages = total ?? totalPages;
-    await supabase.from("user_books").upsert(
+    const { error } = await supabase.from("user_books").upsert(
       {
         user_id: user.id,
         book_id: bookId,
         current_page: pageNumber,
         progress: pages > 0 ? Math.round((pageNumber / pages) * 100) : 0,
+        status: "reading",
       },
       { onConflict: "user_id,book_id" },
     );
-  };
+    if (error) console.error("[Reader] saveProgress error:", error);
+  }, [bookId, totalPages, user]);
 
   // 🚀 init
   useEffect(() => {
@@ -116,7 +126,7 @@ export default function ReaderScreen() {
     };
 
     init();
-  }, [bookId, user]);
+  }, [bookId, currentPage, getPage, saveProgress, user]);
 
   // 🔄 cada cambio de página después del mount
   useEffect(() => {
@@ -124,7 +134,7 @@ export default function ReaderScreen() {
     getPage(currentPage);
     saveProgress(currentPage);
     pagesReadRef.current += 1;
-  }, [currentPage]);
+  }, [bookId, currentPage, getPage, saveProgress, user]);
 
   const nextPage = () => {
     if (currentPage < totalPages) {
@@ -142,26 +152,45 @@ export default function ReaderScreen() {
   const finishBook = async () => {
     if (!user) return;
 
-    await supabase
+    const { error: completeError } = await supabase
       .from("user_books")
-      .update({ status: "completed", progress: 100 })
-      .eq("user_id", user.id)
-      .eq("book_id", bookId);
+      .upsert({
+        user_id: user.id,
+        book_id: bookId,
+        current_page: totalPages,
+        status: "completed",
+        progress: 100,
+        completed_at: new Date().toISOString(),
+      }, { onConflict: "user_id,book_id" });
+    if (completeError) {
+      console.error("[Reader] complete user_books error:", completeError);
+      return;
+    }
 
-    await supabase.from("reading_sessions").insert({
+    const { error: sessionError } = await supabase.from("reading_sessions").insert({
       user_id: user.id,
       book_id: bookId,
       minutes: Math.floor((Date.now() - startTimeRef.current) / 60000),
       pages: pagesReadRef.current,
       xp: bookXp,
     });
+    if (sessionError) console.error("[Reader] reading_sessions insert error:", sessionError);
 
-    await supabase.from("xp_events").insert({
+    const { error: xpError } = await supabase.from("xp_events").insert({
       user_id: user.id,
       amount: bookXp,
       source: "book_completed",
       reference_id: bookId,
     });
+    if (xpError) console.error("[Reader] xp_events insert error:", xpError);
+
+    await checkTrophies(user.id);
+    await Promise.all([
+      fetchTrophies(user.id),
+      fetchUserBooks(user.id),
+      fetchSessions(user.id),
+      fetchXpEvents(user.id),
+    ]);
 
     setCompleted(true);
   };

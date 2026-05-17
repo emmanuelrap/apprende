@@ -1,16 +1,43 @@
 import { create } from "zustand";
-import { supabase } from "../services/supabase";
+import { getBooksWithProgress } from "../services/books";
+import { useAuthStore } from "./authStore";
+
+type BookCategory = {
+  id: string;
+  name: string;
+  slug: string;
+};
+
+type BookTag = {
+  id: string;
+  name: string;
+  slug: string;
+};
+
+type BookStatus = "new" | "reading" | "completed" | "paused";
 
 type Book = {
   id: string;
   title: string;
   author: string;
-  cover_url: string | null;
+  cover: string | null;
   difficulty: number;
-  total_pages: number;
-  xp_base: number;
-  categories: string[];
-  tags: string[];
+  xp: number;
+  estimatedMinutes: number | null;
+  totalPages: number;
+  categories: BookCategory[];
+  tags: BookTag[];
+  progress: number;
+  currentPage: number;
+  status: BookStatus;
+  startedAt: string | null;
+  completedAt: string | null;
+};
+
+type BookFilters = {
+  tagId?: string | null;
+  categoryIds?: string[];
+  search?: string;
 };
 
 type BookStore = {
@@ -18,8 +45,7 @@ type BookStore = {
   selectedBook: Book | null;
   isLoading: boolean;
   error: string | null;
-
-  fetchBooks: () => Promise<void>;
+  fetchBooks: (filters?: BookFilters) => Promise<void>;
   selectBook: (book: Book) => void;
   reset: () => void;
 };
@@ -30,15 +56,17 @@ export const useBookStore = create<BookStore>((set) => ({
   isLoading: false,
   error: null,
 
-  fetchBooks: async () => {
+  fetchBooks: async (filters) => {
     set({ isLoading: true, error: null });
     try {
-      const { data } = await supabase.from("books").select(`
-          *,
-          categories:book_categories(category:categories(name)),
-          tags:book_tag_relations(tag:book_tags(name))
-        `);
-      set({ books: data ?? [] });
+      const userId = useAuthStore.getState().user?.id;
+      if (!userId) {
+        set({ books: [] });
+        return;
+      }
+
+      const books = await getBooksWithProgress(userId, filters);
+      set({ books });
     } catch {
       set({ error: "Error cargando libros" });
     } finally {

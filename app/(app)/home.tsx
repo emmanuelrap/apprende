@@ -1,5 +1,6 @@
+import { ChipSelector } from "@/src/components/ChipSelector";
+import { HomeLoading } from "@/src/components/HomeLoading";
 import { SearchInput } from "@/src/components/SearchInput";
-import { TagSelector } from "@/src/components/TagSelector";
 import { TagsTabs } from "@/src/components/TagsTabs";
 import { useInitApp } from "@/src/hooks/useInitApp";
 import { useAuthStore } from "@/src/store/authStore";
@@ -8,7 +9,6 @@ import { useFilterStore } from "@/src/store/filterStore";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import {
-  ActivityIndicator,
   ScrollView,
   Text,
   TouchableOpacity,
@@ -25,40 +25,47 @@ const DIFFICULTY: Record<number, string> = {
   6: "C2",
 };
 
+const FILTROS_LECTURA = [
+  { id: "all", name: "Todos" },
+  { id: "new", name: "Sin leer" },
+  { id: "reading", name: "Leyendo" },
+  { id: "completed", name: "Leidos" },
+];
+
 export default function HomeScreen() {
   const router = useRouter();
 
-  useInitApp(); //cargar datos iniciales (usuario, libros, gamification...) en estado global
+  useInitApp();
 
-  const { profile, isLoading: authLoading } = useAuthStore();
-  const { books, isLoading: booksLoading } = useBookStore();
-  const { categories, tags } = useFilterStore();
+  const { profile, isLoading: authLoading, user } = useAuthStore();
+  const { books, isLoading: booksLoading, fetchBooks } = useBookStore();
+  const { categories } = useFilterStore();
 
   const [search, setSearch] = useState("");
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [selectedFiltroLectura, setSelectedFiltroLectura] =
+    useState<string | null>("all");
 
   useEffect(() => {
-    console.log("profile", profile);
-    console.log("books", books);
-    console.log("categories", categories);
-    console.log("tags", tags);
-  }, [profile, books, categories, tags]);
+    if (!user?.id) return;
+    fetchBooks({
+      tagId: selectedTag,
+      categoryIds: selectedCategories,
+      search,
+    });
+  }, [fetchBooks, search, selectedCategories, selectedTag, user?.id]);
 
-  useEffect(() => {
-    console.log("selectedCategory", selectedCategory);
-    console.log("selectedTag", selectedTag);
-    console.log("search", search);
-  }, [selectedCategory, selectedTag, search]);
-
-  //Si hay usuario logueado, muestra la pantalla principal. Si no, redirige al login.
-  const user = useAuthStore((state) => state.user);
   if (!authLoading && !user) {
     router.replace("/");
     return null;
   }
 
   const loading = authLoading || booksLoading;
+  const booksToRender = books.filter((book) => {
+    if (!selectedFiltroLectura || selectedFiltroLectura === "all") return true;
+    return book.status === selectedFiltroLectura;
+  });
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: "#F7FAFC" }}>
@@ -69,22 +76,30 @@ export default function HomeScreen() {
           onFilterPress={() => console.log("abrir filtros")}
         />
 
-        <TagsTabs selected={selectedCategory} onSelect={setSelectedCategory} />
-        <TagSelector
-          tags={tags}
-          selected={selectedTag}
-          onSelect={setSelectedTag}
+        <TagsTabs selected={selectedTag} onSelect={setSelectedTag} />
+
+        {/* Categorias */}
+        <ChipSelector
+          multiselect={true}
+          chips={categories}
+          selected={selectedCategories}
+          onSelect={setSelectedCategories}
         />
-        {/* 👤 Datos perfil */}
+
+        {/* Filtro de lectura */}
+        <ChipSelector
+          chips={FILTROS_LECTURA}
+          selected={selectedFiltroLectura}
+          onSelect={setSelectedFiltroLectura}
+          showAll={false}
+        />
+
         <View style={{ marginBottom: 20 }}>
-          <Text style={{ fontSize: 20, fontWeight: "700" }}>
-            Hola, {profile?.name ?? "👋"}
-          </Text>
-          <Text style={{ color: "#64748B" }}>⚡ {profile?.xp ?? 0} XP</Text>
+          <Text className="font-extrabold">Hola, {profile?.name ?? "-"}</Text>
+          <Text style={{ color: "#64748B" }}>{profile?.xp ?? 0} XP</Text>
         </View>
 
-        {/* 📚 libros */}
-        {books.map((book) => (
+        {booksToRender.map((book) => (
           <TouchableOpacity
             key={book.id}
             onPress={() => router.push(`/reader/${book.id}`)}
@@ -102,7 +117,6 @@ export default function HomeScreen() {
               {book.author}
             </Text>
 
-            {/* categorías */}
             {book.categories.length > 0 && (
               <View
                 style={{
@@ -112,7 +126,7 @@ export default function HomeScreen() {
                   marginBottom: 8,
                 }}
               >
-                {book.categories.map((cat: any) => (
+                {book.categories.map((cat) => (
                   <View
                     key={cat.id}
                     style={{
@@ -130,7 +144,6 @@ export default function HomeScreen() {
               </View>
             )}
 
-            {/* tags */}
             {book.tags.length > 0 && (
               <View
                 style={{
@@ -140,7 +153,7 @@ export default function HomeScreen() {
                   marginBottom: 8,
                 }}
               >
-                {book.tags.map((tag: any) => (
+                {book.tags.map((tag) => (
                   <View
                     key={tag.id}
                     style={{
@@ -158,23 +171,21 @@ export default function HomeScreen() {
               </View>
             )}
 
-            {/* meta */}
             <View style={{ flexDirection: "row", gap: 12, marginBottom: 10 }}>
               <Text style={{ fontSize: 12, color: "#94A3B8" }}>
-                📄 {book.totalPages} págs
+                {book.totalPages} pags
               </Text>
               <Text style={{ fontSize: 12, color: "#94A3B8" }}>
-                ⏱ {book.estimatedMinutes} min
+                {book.estimatedMinutes ?? 0} min
               </Text>
               <Text style={{ fontSize: 12, color: "#94A3B8" }}>
-                💪 {DIFFICULTY[book.difficulty] ?? "-"}
+                {DIFFICULTY[book.difficulty] ?? "-"}
               </Text>
               <Text style={{ fontSize: 12, color: "#94A3B8" }}>
-                ⚡ {book.xp} XP
+                {book.xp} XP
               </Text>
             </View>
 
-            {/* progreso */}
             <View
               style={{ height: 6, backgroundColor: "#E2E8F0", borderRadius: 4 }}
             >
@@ -190,28 +201,15 @@ export default function HomeScreen() {
             </View>
             <Text style={{ fontSize: 11, color: "#94A3B8", marginTop: 4 }}>
               {book.status === "completed"
-                ? "✅ Completado"
-                : `${book.progress}% • pág ${book.currentPage}`}
+                ? "Completado"
+                : `${book.progress}% - pag ${book.currentPage}`}
             </Text>
           </TouchableOpacity>
         ))}
       </ScrollView>
 
       {loading && (
-        <View
-          style={{
-            position: "absolute",
-            top: 0,
-            bottom: 0,
-            left: 0,
-            right: 0,
-            justifyContent: "center",
-            alignItems: "center",
-            backgroundColor: "rgba(255,255,255,0.6)",
-          }}
-        >
-          <ActivityIndicator />
-        </View>
+        <HomeLoading />
       )}
     </SafeAreaView>
   );

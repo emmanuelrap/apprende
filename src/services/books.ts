@@ -1,10 +1,51 @@
 import { supabase } from "./supabase";
 
-// =====================
-// 📚 GET BOOKS + PROGRESS
-// =====================
-export async function getBooksWithProgress(userId: string) {
-  const { data, error } = await supabase
+type BookFilters = {
+  tagId?: string | null;
+  categoryIds?: string[];
+  search?: string;
+};
+
+export async function getBooksWithProgress(
+  userId: string,
+  filters?: BookFilters,
+) {
+  const selectedCategories = filters?.categoryIds ?? [];
+  const selectedTag = filters?.tagId ?? null;
+  const search = filters?.search?.trim();
+
+  let filteredIds: string[] | null = null;
+
+  if (selectedCategories.length > 0) {
+    const { data: catRows, error: catError } = await supabase
+      .from("book_categories")
+      .select("book_id")
+      .in("category_id", selectedCategories);
+
+    if (catError) throw catError;
+
+    filteredIds = [...new Set((catRows ?? []).map((r) => r.book_id))];
+  }
+
+  if (selectedTag) {
+    const { data: tagRows, error: tagError } = await supabase
+      .from("book_tag_relations")
+      .select("book_id")
+      .eq("tag_id", selectedTag);
+
+    if (tagError) throw tagError;
+
+    const tagSet = new Set((tagRows ?? []).map((r) => r.book_id));
+    filteredIds = filteredIds
+      ? filteredIds.filter((id) => tagSet.has(id))
+      : Array.from(tagSet);
+  }
+
+  if (filteredIds && filteredIds.length === 0) {
+    return [];
+  }
+
+  let query = supabase
     .from("books")
     .select(
       `
@@ -22,6 +63,16 @@ export async function getBooksWithProgress(userId: string) {
   `,
     )
     .eq("user_books.user_id", userId);
+
+  if (filteredIds) {
+    query = query.in("id", filteredIds);
+  }
+
+  if (search) {
+    query = query.or(`title.ilike.%${search}%,author.ilike.%${search}%`);
+  }
+
+  const { data, error } = await query;
 
   if (error) throw error;
 
@@ -48,9 +99,6 @@ export async function getBooksWithProgress(userId: string) {
   });
 }
 
-// =====================
-// 🗑 DELETE BOOK
-// =====================
 export async function deleteBook(bookId: string) {
   const { data, error } = await supabase
     .from("books")
@@ -59,7 +107,7 @@ export async function deleteBook(bookId: string) {
     .select();
 
   if (error) {
-    console.error("❌ DELETE ERROR:", error);
+    console.error("DELETE ERROR:", error);
     throw error;
   }
 

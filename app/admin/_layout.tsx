@@ -1,6 +1,7 @@
 import { BottomNav } from "@/src/components/BottomNavs";
 import { Slot } from "expo-router";
 import { View } from "react-native";
+import "../../global.css";
 
 export default function Layout() {
   return (
@@ -8,7 +9,6 @@ export default function Layout() {
       <View style={{ flex: 1 }}>
         <Slot />
       </View>
-
       <BottomNav />
     </View>
   );

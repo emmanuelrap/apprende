@@ -39,7 +39,7 @@ export default function Layout() {
     };
 
     init();
-  }, []);
+  }, [router]);
 
   // 3. Cuando termine de cargar auth Y idioma, revisa si falta configurar idioma
   useEffect(() => {
@@ -48,7 +48,7 @@ export default function Layout() {
     if (!prefs) {
       router.replace("/language-setup");
     }
-  }, [loading, langLoading, prefs]);
+  }, [loading, langLoading, prefs, router]);
 
   if (loading || langLoading) {
     return (
@@ -63,9 +63,11 @@ export default function Layout() {
 
   return (
     <View style={{ flex: 1 }}>
-      <TopBar name={name} />
+      <View style={{ zIndex: 2000, elevation: 2000 }}>
+        <TopBar name={name} />
+      </View>
 
-      <View style={{ flex: 1 }}>
+      <View style={{ flex: 1, zIndex: 1, elevation: 1 }}>
         <Slot />
       </View>
 

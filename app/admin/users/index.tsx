@@ -1,6 +1,5 @@
 import { supabase } from "@/src/services/supabase";
 import { deleteUser } from "@/src/services/users";
-import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 
 import {
@@ -16,8 +15,6 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import Toast from "react-native-toast-message";
 
 export default function AdminBooks() {
-  const router = useRouter();
-
   const [users, setUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -41,12 +38,12 @@ export default function AdminBooks() {
 
   const handleDeleteUser = (userId: string) => {
     if (Platform.OS === "web") {
-      const ok = window.confirm("¿Eliminar usuario?");
+      const ok = window.confirm("Eliminar usuario?");
       if (!ok) return;
 
       onDelete(userId);
     } else {
-      Alert.alert("Eliminar usuario", "¿Seguro?", [
+      Alert.alert("Eliminar usuario", "Seguro?", [
         { text: "Cancelar" },
         { text: "Eliminar", onPress: () => onDelete(userId) },
       ]);
@@ -73,27 +70,24 @@ export default function AdminBooks() {
   };
 
   return (
-    <SafeAreaView style={{ flex: 1 }}>
+    <SafeAreaView className="flex-1">
       <ScrollView contentContainerStyle={{ padding: 16 }}>
-        <Text style={{ fontSize: 20, fontWeight: "bold", marginBottom: 16 }}>
-          📚 Admin - Usuarios
+        <Text className="mb-4 text-2xl font-bold text-red-700">
+          Admin - Usuarios
         </Text>
 
-        {/* 📚 Lista */}
+        <div className="mb-4 h-px bg-gray-300">
+          {" "}
+          <Text className="font-semibold">JEJEJE</Text>
+        </div>
+
         {users.map((user) => (
-          <View key={user.id}>
-            <TouchableOpacity
-              style={{
-                padding: 14,
-                backgroundColor: "#fff",
-                borderRadius: 8,
-                marginBottom: 10,
-              }}
-            >
-              <Text style={{ fontWeight: "600" }}>{user.name}</Text>
+          <View key={user.id} className="flex">
+            <TouchableOpacity className="mb-2.5 rounded-lg bg-white p-3.5">
+              <Text className="font-semibold">{user.name}</Text>
             </TouchableOpacity>
             <TouchableOpacity onPress={() => handleDeleteUser(user.id)}>
-              <Text>Borrar</Text>
+              <Text className="font-bold text-red-500">Booorrar</Text>
             </TouchableOpacity>
           </View>
         ))}

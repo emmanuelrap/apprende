@@ -11,7 +11,35 @@ if (!supabaseUrl || !supabaseKey) {
   throw new Error("Missing Supabase environment variables");
 }
 
+const supabaseFetch: typeof fetch = async (input, init) => {
+  const getUrl = () => {
+    if (typeof input === "string") return input;
+    if (input instanceof URL) return input.toString();
+    return input.url;
+  };
+
+  try {
+    const response = await fetch(input, init);
+
+    if (!response.ok) {
+      console.error("[Supabase HTTP Error]", {
+        status: response.status,
+        statusText: response.statusText,
+        url: getUrl(),
+      });
+    }
+
+    return response;
+  } catch (error) {
+    console.error("[Supabase Network Error]", { url: getUrl(), error });
+    throw error;
+  }
+};
+
 export const supabase = createClient(supabaseUrl, supabaseKey, {
+  global: {
+    fetch: supabaseFetch,
+  },
   auth: {
     ...(Platform.OS !== "web" ? { storage: AsyncStorage } : {}),
     autoRefreshToken: true,

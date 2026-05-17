@@ -44,6 +44,7 @@ type ReadingStore = {
     pages: number,
     xp: number,
   ) => Promise<void>;
+  reset: () => void;
 };
 
 export const useReadingStore = create<ReadingStore>((set, get) => ({
