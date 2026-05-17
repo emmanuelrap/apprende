@@ -20,24 +20,14 @@ export function BottomNav() {
         onPress={() => router.replace("/home")}
       />
       <NavItem
-        label="Videos"
-        icon="play-circle-outline"
-        onPress={() => router.replace("/videos")}
+        label="Vocabulario"
+        icon="library-outline"
+        onPress={() => router.replace("/study")}
       />
       <NavItem
         label="Perfil"
         icon="person-outline"
         onPress={() => router.replace("/profile")}
-      />
-      <NavItem
-        label="Vocabulario"
-        icon=""
-        onPress={() => router.replace("/study")}
-      />
-      <NavItem
-        label="Admin"
-        icon=""
-        onPress={() => router.replace("/admin/books")}
       />
     </View>
   );

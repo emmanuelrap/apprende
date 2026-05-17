@@ -8,7 +8,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useLanguage } from "../hooks/useLanguaje";
+import { usePrefsStore } from "../store/prefsStore";
 
 //TODO Agregar a la BD una tabla de idiomas con su código, nombre y emoji de bandera. Cargar desde ahí en vez de hardcodear el array acá.
 const LANGUAGES = [
@@ -26,14 +26,14 @@ type Step = "native" | "target";
 
 export default function LanguageSetupScreen() {
   const router = useRouter();
-  const { savePrefs } = useLanguage();
+  const { setLanguages } = usePrefsStore();
   const [step, setStep] = useState<Step>("native");
   const [nativeLang, setNativeLang] = useState<string | null>(null);
 
-  async function handleTargetSelect(code: string) {
+  function handleTargetSelect(code: string) {
     if (!nativeLang) return;
 
-    await savePrefs({ nativeLanguage: nativeLang, targetLanguage: code });
+    setLanguages(nativeLang, code);
     router.replace("/home");
   }
 

@@ -1,56 +1,25 @@
 import { BottomNav } from "@/src/components/BottomNavs";
 import { TopBar } from "@/src/components/TopBar";
-import { useLanguage } from "@/src/hooks/useLanguaje";
+import { useInitApp } from "@/src/hooks/useInitApp";
+import { usePrefsStore } from "@/src/store/prefsStore";
+import { useAuthStore } from "@/src/store/authStore";
 
-import { supabase } from "@/src/services/supabase";
 import { Slot, useRouter } from "expo-router";
-import { useEffect, useState } from "react";
 import { ActivityIndicator, View } from "react-native";
 import "../../global.css";
 
 export default function Layout() {
   const router = useRouter();
-  const { prefs, loading: langLoading } = useLanguage();
+  useInitApp();
 
-  const [loading, setLoading] = useState(true);
-  const [name, setName] = useState("");
+  const user = useAuthStore((s) => s.user);
+  const isLoading = useAuthStore((s) => s.isLoading);
+  const nativeLang = usePrefsStore((s) => s.nativeLanguage);
+  const targetLang = usePrefsStore((s) => s.targetLanguage);
+  const hasPrefs = nativeLang != null && targetLang != null;
 
-  useEffect(() => {
-    const init = async () => {
-      // 1. Verifica auth
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-
-      if (!user) {
-        router.replace("/");
-        return;
-      }
-
-      // 2. Carga perfil
-      const { data } = await supabase
-        .from("profiles")
-        .select("name")
-        .eq("id", user.id)
-        .single();
-
-      setName(data?.name ?? "");
-      setLoading(false);
-    };
-
-    init();
-  }, [router]);
-
-  // 3. Cuando termine de cargar auth Y idioma, revisa si falta configurar idioma
-  useEffect(() => {
-    if (loading || langLoading) return;
-
-    if (!prefs) {
-      router.replace("/language-setup");
-    }
-  }, [loading, langLoading, prefs, router]);
-
-  if (loading || langLoading) {
+  // Mientras carga auth, mostrar spinner
+  if (isLoading) {
     return (
       <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
         <ActivityIndicator />
@@ -58,13 +27,23 @@ export default function Layout() {
     );
   }
 
-  // No renderiza nada si falta el idioma (evita flash antes del redirect)
-  if (!prefs) return null;
+  // Sin usuario → redirect a auth
+  if (!user) {
+    router.replace("/");
+    return null;
+  }
 
+  // Sin prefs de idioma → redirect a language setup
+  if (!hasPrefs) {
+    router.replace("/language-setup");
+    return null;
+  }
+
+  // Todo listo → mostrar app
   return (
     <View style={{ flex: 1 }}>
       <View style={{ zIndex: 2000, elevation: 2000 }}>
-        <TopBar name={name} />
+        <TopBar name={user.user_metadata?.name ?? "Usuario"} />
       </View>
 
       <View style={{ flex: 1, zIndex: 1, elevation: 1 }}>

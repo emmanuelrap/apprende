@@ -1,3 +1,4 @@
+import { User } from "@supabase/supabase-js";
 import { create } from "zustand";
 import { supabase } from "../services/supabase";
 import { useGamificationStore } from "./gamificationStore";
@@ -18,16 +19,18 @@ type XpEvent = {
 };
 
 type AuthStore = {
-  user: any | null;
+  user: User | null;
   profile: Profile | null;
   xpEvents: XpEvent[];
   isLoading: boolean;
+  error: string | null;
 
   init: () => Promise<void>;
   logout: () => Promise<void>;
   clearMyData: () => Promise<void>;
   reset: () => void;
   fetchXpEvents: (userId: string) => Promise<void>;
+  subscribeToAuthChanges: () => () => void;
 };
 
 export const useAuthStore = create<AuthStore>((set) => ({
@@ -35,39 +38,73 @@ export const useAuthStore = create<AuthStore>((set) => ({
   profile: null,
   xpEvents: [],
   isLoading: true,
+  error: null,
+
+  subscribeToAuthChanges: () => {
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === "SIGNED_IN" && session?.user) {
+        await useAuthStore.getState().init();
+      } else if (event === "SIGNED_OUT") {
+        useAuthStore.getState().reset();
+      }
+    });
+    return () => subscription.unsubscribe();
+  },
 
   init: async () => {
-    set({ isLoading: true });
-    const { data } = await supabase.auth.getUser();
-    const user = data.user;
+    set({ isLoading: true, error: null });
+    try {
+      const { data, error: userError } = await supabase.auth.getUser();
+      if (userError || !data.user) {
+        set({ user: null, profile: null, isLoading: false });
+        return;
+      }
 
-    if (!user) {
-      set({ user: null, profile: null, isLoading: false });
-      return;
+      const user = data.user;
+
+      const { data: profileData, error: profileError } = await supabase
+        .from("profiles")
+        .select("name, avatar_url, xp")
+        .eq("id", user.id)
+        .single();
+
+      if (profileError) {
+        set({ user, profile: null, isLoading: false });
+        return;
+      }
+
+      set({ user, profile: profileData, isLoading: false });
+    } catch {
+      set({
+        error: "Error al cargar autenticación",
+        user: null,
+        profile: null,
+        isLoading: false,
+      });
     }
-
-    const { data: profileData } = await supabase
-      .from("profiles")
-      .select("name, avatar_url, xp")
-      .eq("id", user.id)
-      .single();
-
-    set({ user, profile: profileData ?? null, isLoading: false });
   },
 
   fetchXpEvents: async (userId) => {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from("xp_events")
       .select("*")
       .eq("user_id", userId)
       .order("created_at", { ascending: false })
       .limit(20);
+
+    if (error) return;
     set({ xpEvents: data ?? [] });
   },
 
   logout: async () => {
-    await supabase.auth.signOut();
-    set({ user: null, profile: null, xpEvents: [] });
+    try {
+      await supabase.auth.signOut();
+    } catch {
+      // Ignorar error de logout
+    }
+    set({ user: null, profile: null, xpEvents: [], error: null });
   },
 
   clearMyData: async () => {
@@ -104,5 +141,11 @@ export const useAuthStore = create<AuthStore>((set) => ({
   },
 
   reset: () =>
-    set({ user: null, profile: null, xpEvents: [], isLoading: false }),
+    set({
+      user: null,
+      profile: null,
+      xpEvents: [],
+      error: null,
+      isLoading: false,
+    }),
 }));

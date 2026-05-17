@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useRef } from "react";
 import {
   ActivityIndicator,
   Animated,
@@ -8,18 +8,9 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { supabase } from "../services/supabase";
+import { useFilterStore } from "../store/filterStore";
 
-interface Category {
-  id: string;
-  name: string;
-  slug: string;
-}
-
-interface TagsTabsProps {
-  selected: string | null;
-  onSelect: (id: string | null) => void;
-}
+type Tag = { id: string; name: string; slug: string };
 
 function TabIcon({ slug, active }: { slug: string; active: boolean }) {
   const color = active ? "#1A7A6E" : "#9CA3AF";
@@ -51,24 +42,17 @@ function TabIcon({ slug, active }: { slug: string; active: boolean }) {
   return <View style={[styles.bookmark, { borderColor: color }]} />;
 }
 
-export function TagsTabs({ selected, onSelect }: TagsTabsProps) {
-  const [tags, setTags] = useState<Category[]>([]);
-  const [loading, setLoading] = useState(true);
+export function TagsTabs({
+  selected,
+  onSelect,
+}: {
+  selected: string | null;
+  onSelect: (id: string | null) => void;
+}) {
+  const tags = useFilterStore((s) => s.tags);
+  const isLoading = useFilterStore((s) => s.isLoading);
 
-  useEffect(() => {
-    async function fetchTags() {
-      const { data, error } = await supabase
-        .from("book_tags")
-        .select("id, name, slug")
-        .order("name");
-
-      if (!error && data) setTags(data);
-      setLoading(false);
-    }
-    fetchTags();
-  }, []);
-
-  if (loading) {
+  if (isLoading) {
     return (
       <View style={styles.loadingWrap}>
         <ActivityIndicator size="small" color="#1A7A6E" />
@@ -104,7 +88,7 @@ function Tab({
   isActive,
   onPress,
 }: {
-  cat: Category;
+  cat: Tag;
   isActive: boolean;
   onPress: () => void;
 }) {
