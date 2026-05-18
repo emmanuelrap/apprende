@@ -1,3 +1,4 @@
+import { THEME_COLORS } from "@/src/theme";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import { Modal, Pressable, Text, TouchableOpacity, View } from "react-native";
@@ -151,12 +152,12 @@ export function ReadingBar({
         }}
       >
         <TouchableOpacity onPress={() => router.back()}>
-          <Text style={{ fontSize: 20 }}>←</Text>
+          <Text style={{ fontSize: 20, color: THEME_COLORS[theme].text }}>←</Text>
         </TouchableOpacity>
 
         <Text
           numberOfLines={1}
-          style={{ flex: 1, fontWeight: "600", fontSize: 15 }}
+          style={{ flex: 1, fontWeight: "600", fontSize: 15, color: THEME_COLORS[theme].text }}
         >
           {title}
         </Text>
