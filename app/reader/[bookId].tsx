@@ -169,71 +169,76 @@ export default function ReaderScreen() {
         onReaderModeChange={(m) => setAppSettings({ readerMode: m })}
       />
 
-      {loading || !page ? (
-        <ActivityIndicator style={{ flex: 1 }} />
-      ) : readerMode === "dual" ? (
-        <DualPanelReader
-          contentTop={getContent(langTop) ?? ""}
-          contentBottom={getContent(langBottom) ?? ""}
-          langTop={langTop}
-          langBottom={langBottom}
-          bookId={bookId}
-          pageId={page?.id ?? ""}
-          activeParagraph={activeParagraph}
-          onParagraphPress={toggleParagraph}
-          fontSize={fontSize}
-          theme={theme}
-        />
-      ) : readerMode === "interleaved" ? (
-        <InterleavedReader
-          contentTop={getContent(langTop) ?? ""}
-          contentBottom={getContent(langBottom) ?? ""}
-          langTop={langTop}
-          langBottom={langBottom}
-          bookId={bookId}
-          pageId={page?.id ?? ""}
-          activeParagraph={activeParagraph}
-          onParagraphPress={toggleParagraph}
-          fontSize={fontSize}
-          theme={theme}
-        />
-      ) : (
-        <SingleReader
-          content={getContent(langTop) ?? ""}
-          language={langTop}
-          bookId={bookId}
-          pageId={page?.id ?? ""}
-          activeParagraph={activeParagraph}
-          onParagraphPress={toggleParagraph}
-          fontSize={fontSize}
-          theme={theme}
-        />
-      )}
+      <View style={{ flex: 1 }}>
+        {loading || !page ? (
+          <ActivityIndicator style={{ flex: 1 }} />
+        ) : readerMode === "dual" ? (
+          <DualPanelReader
+            contentTop={getContent(langTop) ?? ""}
+            contentBottom={getContent(langBottom) ?? ""}
+            langTop={langTop}
+            langBottom={langBottom}
+            bookId={bookId}
+            pageId={page?.id ?? ""}
+            activeParagraph={activeParagraph}
+            onParagraphPress={toggleParagraph}
+            fontSize={fontSize}
+            theme={theme}
+          />
+        ) : readerMode === "interleaved" ? (
+          <InterleavedReader
+            contentTop={getContent(langTop) ?? ""}
+            contentBottom={getContent(langBottom) ?? ""}
+            langTop={langTop}
+            langBottom={langBottom}
+            bookId={bookId}
+            pageId={page?.id ?? ""}
+            activeParagraph={activeParagraph}
+            onParagraphPress={toggleParagraph}
+            fontSize={fontSize}
+            theme={theme}
+          />
+        ) : (
+          <SingleReader
+            content={getContent(langTop) ?? ""}
+            language={langTop}
+            bookId={bookId}
+            pageId={page?.id ?? ""}
+            activeParagraph={activeParagraph}
+            onParagraphPress={toggleParagraph}
+            fontSize={fontSize}
+            theme={theme}
+          />
+        )}
 
-      {/* footer */}
-      <View
-        style={{
-          paddingHorizontal: 20,
-          paddingBottom: 20,
-          paddingTop: 10,
-          flexDirection: "row",
-          justifyContent: "space-between",
-          borderTopWidth: 1,
-          borderColor: theme === "dark" ? "#333" : "#ddd",
-          backgroundColor: colors.bg,
-        }}
-      >
-        <TouchableOpacity onPress={prevPage}>
-          <Text style={{ color: colors.text }}>⬅️ Anterior</Text>
-        </TouchableOpacity>
-        <Text style={{ color: colors.text }}>
-          {currentPage} / {totalPages}
-        </Text>
-        <TouchableOpacity onPress={nextPage}>
-          <Text style={{ color: colors.text }}>
-            ➡️ {currentPage === totalPages ? "Terminar" : "Siguiente"}
+        {/* tap zones */}
+        <TouchableOpacity
+          style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: "40%" }}
+          activeOpacity={1}
+          onPress={prevPage}
+        />
+        <TouchableOpacity
+          style={{ position: "absolute", right: 0, top: 0, bottom: 0, width: "40%" }}
+          activeOpacity={1}
+          onPress={nextPage}
+        />
+
+        {/* page indicator */}
+        <View
+          style={{
+            position: "absolute",
+            bottom: 8,
+            alignSelf: "center",
+            paddingHorizontal: 12,
+            paddingVertical: 4,
+            borderRadius: 10,
+            backgroundColor: theme === "dark" ? "rgba(255,255,255,0.15)" : "rgba(0,0,0,0.08)",
+          }}
+        >
+          <Text style={{ fontSize: 12, color: colors.text, opacity: 0.6 }}>
+            {currentPage} / {totalPages}
           </Text>
-        </TouchableOpacity>
+        </View>
       </View>
     </SafeAreaView>
   );
