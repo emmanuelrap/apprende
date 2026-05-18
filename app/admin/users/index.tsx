@@ -76,10 +76,10 @@ export default function AdminBooks() {
           Admin - Usuarios
         </Text>
 
-        <div className="mb-4 h-px bg-gray-300">
-          {" "}
+        <View className="mb-4">
+          <View className="h-px bg-gray-300" />
           <Text className="font-semibold">JEJEJE</Text>
-        </div>
+        </View>
 
         {users.map((user) => (
           <View key={user.id} className="flex">

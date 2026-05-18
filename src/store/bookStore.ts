@@ -19,12 +19,12 @@ type BookStatus = "new" | "reading" | "completed" | "paused";
 type Book = {
   id: string;
   title: string;
-  author: string;
+  author: string | null;
   cover: string | null;
   difficulty: number;
   xp: number;
   estimatedMinutes: number | null;
-  totalPages: number;
+  totalPages: number | null;
   categories: BookCategory[];
   tags: BookTag[];
   progress: number;

@@ -2,6 +2,7 @@ import { User } from "@supabase/supabase-js";
 import { create } from "zustand";
 import { supabase } from "../services/supabase";
 import { useGamificationStore } from "./gamificationStore";
+import { usePrefsStore } from "./prefsStore";
 import { useReadingStore } from "./readingStore";
 import { useVocabularyStore } from "./vocabularyStore";
 
@@ -30,7 +31,6 @@ type AuthStore = {
   clearMyData: () => Promise<void>;
   reset: () => void;
   fetchXpEvents: (userId: string) => Promise<void>;
-  subscribeToAuthChanges: () => () => void;
 };
 
 export const useAuthStore = create<AuthStore>((set) => ({
@@ -39,19 +39,6 @@ export const useAuthStore = create<AuthStore>((set) => ({
   xpEvents: [],
   isLoading: true,
   error: null,
-
-  subscribeToAuthChanges: () => {
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (event === "SIGNED_IN" && session?.user) {
-        await useAuthStore.getState().init();
-      } else if (event === "SIGNED_OUT") {
-        useAuthStore.getState().reset();
-      }
-    });
-    return () => subscription.unsubscribe();
-  },
 
   init: async () => {
     set({ isLoading: true, error: null });
@@ -131,6 +118,7 @@ export const useAuthStore = create<AuthStore>((set) => ({
     if (profileError) throw profileError;
 
     useGamificationStore.getState().reset();
+    usePrefsStore.persist.clearStorage();
     useReadingStore.getState().reset();
     useVocabularyStore.getState().reset();
     set((state) => ({

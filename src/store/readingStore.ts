@@ -28,7 +28,6 @@ type ReaderInit = {
 
 type ReadingStore = {
   userBooks: UserBook[];
-  currentReading: UserBook | null;
   currentPage: number;
   currentContent: { es: string; en: string } | null;
   isLoading: boolean;
@@ -36,12 +35,6 @@ type ReadingStore = {
 
   fetchSessions: (userId: string) => Promise<void>;
   fetchUserBooks: (userId: string) => Promise<void>;
-  startBook: (userId: string, bookId: string) => Promise<void>;
-  updateProgress: (
-    userBookId: string,
-    page: number,
-    totalPages: number,
-  ) => Promise<void>;
   fetchPageContent: (bookId: string, pageNumber: number) => Promise<void>;
   saveSession: (
     userId: string,
@@ -78,7 +71,6 @@ type ReadingStore = {
 
 export const useReadingStore = create<ReadingStore>((set) => ({
   userBooks: [],
-  currentReading: null,
   currentPage: 1,
   currentContent: null,
   isLoading: false,
@@ -105,24 +97,6 @@ export const useReadingStore = create<ReadingStore>((set) => ({
     } finally {
       set({ isLoading: false });
     }
-  },
-
-  startBook: async (userId, bookId) => {
-    const { data } = await supabase
-      .from("user_books")
-      .upsert({ user_id: userId, book_id: bookId, status: "reading" })
-      .select()
-      .single();
-    set({ currentReading: data });
-  },
-
-  updateProgress: async (userBookId, page, totalPages) => {
-    const progress = Math.round((page / totalPages) * 100);
-    await supabase
-      .from("user_books")
-      .update({ current_page: page, progress })
-      .eq("id", userBookId);
-    set({ currentPage: page });
   },
 
   fetchPageContent: async (bookId, pageNumber) => {
@@ -163,6 +137,11 @@ export const useReadingStore = create<ReadingStore>((set) => ({
       amount: xp,
       source: "reading",
     });
+    const { data: profile } = await supabase
+      .from("profiles").select("xp").eq("id", userId).single();
+    if (profile) {
+      await supabase.from("profiles").update({ xp: profile.xp + xp }).eq("id", userId);
+    }
   },
 
   initReader: async (bookId, userId) => {
@@ -228,6 +207,11 @@ export const useReadingStore = create<ReadingStore>((set) => ({
       source: "book_completed",
       reference_id: bookId,
     });
+    const { data: profile } = await supabase
+      .from("profiles").select("xp").eq("id", userId).single();
+    if (profile) {
+      await supabase.from("profiles").update({ xp: profile.xp + bookXp }).eq("id", userId);
+    }
   },
 
   getPage: async (bookId, pageNumber) => {
@@ -255,7 +239,6 @@ export const useReadingStore = create<ReadingStore>((set) => ({
   reset: () =>
     set({
       userBooks: [],
-      currentReading: null,
       currentPage: 1,
       currentContent: null,
       sessions: [],

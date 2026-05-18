@@ -1,9 +1,33 @@
 import { supabase } from "./supabase";
 
+type BookStatus = "new" | "reading" | "completed" | "paused";
+
 type BookFilters = {
   tagId?: string | null;
   categoryIds?: string[];
   search?: string;
+};
+
+type BookCategory = { id: string; name: string; slug: string };
+type BookTag = { id: string; name: string; slug: string };
+type BookWithRelations = {
+  id: string;
+  title: string;
+  author: string | null;
+  cover_url: string | null;
+  difficulty: number;
+  xp_base: number | null;
+  estimated_minutes: number | null;
+  total_pages: number | null;
+  book_categories: { categories: BookCategory[] }[];
+  book_tag_relations: { book_tags: BookTag[] }[];
+  user_books: {
+    current_page: number;
+    progress: number;
+    status: string;
+    started_at: string | null;
+    completed_at: string | null;
+  }[];
 };
 
 export async function getBooksWithProgress(
@@ -76,7 +100,7 @@ export async function getBooksWithProgress(
 
   if (error) throw error;
 
-  return (data || []).map((book: any) => {
+    return (data || []).map((book: BookWithRelations) => {
     const progress = book.user_books?.[0] ?? null;
 
     return {
@@ -88,16 +112,18 @@ export async function getBooksWithProgress(
       xp: (book.xp_base ?? 10) * (book.difficulty ?? 1),
       estimatedMinutes: book.estimated_minutes,
       totalPages: book.total_pages,
-      categories: book.book_categories?.map((bc: any) => bc.categories) ?? [],
-      tags: book.book_tag_relations?.map((bt: any) => bt.book_tags) ?? [],
+      categories: book.book_categories?.flatMap((bc) => bc.categories) ?? [],
+      tags: book.book_tag_relations?.flatMap((bt) => bt.book_tags) ?? [],
       progress: progress?.progress ?? 0,
       currentPage: progress?.current_page ?? 0,
-      status: progress?.status ?? "new",
+      status: (progress?.status ?? "new") as BookStatus,
       startedAt: progress?.started_at ?? null,
       completedAt: progress?.completed_at ?? null,
     };
   });
 }
+
+export type { BookStatus };
 
 export async function deleteBook(bookId: string) {
   const { data, error } = await supabase

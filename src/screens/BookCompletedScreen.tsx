@@ -1,9 +1,9 @@
 // src/screens/BookCompletedScreen.tsx
 import LottieView from "lottie-react-native";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Animated, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useLevel } from "../hooks/useLevel";
+import { useGamificationStore } from "../store/gamificationStore";
 
 type Props = {
   xpBefore: number;
@@ -12,14 +12,27 @@ type Props = {
   onContinue: () => void;
 };
 
+type LevelInfo = { current: { level: number; xp_required: number; title: string }; next: { level: number; xp_required: number; title: string } | null; progress: number };
+
+function computeLevelInfo(xp: number, levels: { level: number; xp_required: number; title: string }[]): LevelInfo | null {
+  if (!levels.length) return null;
+  const current = [...levels].reverse().find((l) => xp >= l.xp_required) ?? levels[0];
+  const next = levels.find((l) => l.level === current.level + 1) ?? null;
+  const progress = next
+    ? Math.round(((xp - current.xp_required) / (next.xp_required - current.xp_required)) * 100)
+    : 100;
+  return { current, next, progress };
+}
+
 export function BookCompletedScreen({
   xpBefore,
   xpGained,
   bookTitle,
   onContinue,
 }: Props) {
+  const levels = useGamificationStore((s) => s.levels);
   const xpAfter = xpBefore + xpGained;
-  const levelInfo = useLevel(xpAfter);
+  const levelInfo = useMemo(() => computeLevelInfo(xpAfter, levels), [xpAfter, levels]);
 
   const barAnim = useRef(new Animated.Value(0)).current;
   const xpCountAnim = useRef(new Animated.Value(0)).current;

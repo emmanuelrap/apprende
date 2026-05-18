@@ -2,7 +2,6 @@ import { ChipSelector } from "@/src/components/ChipSelector";
 import { HomeLoading } from "@/src/components/HomeLoading";
 import { SearchInput } from "@/src/components/SearchInput";
 import { TagsTabs } from "@/src/components/TagsTabs";
-import { useInitApp } from "@/src/hooks/useInitApp";
 import { useAuthStore } from "@/src/store/authStore";
 import { useBookStore } from "@/src/store/bookStore";
 import { useFilterStore } from "@/src/store/filterStore";
@@ -34,8 +33,6 @@ const FILTROS_LECTURA = [
 
 export default function HomeScreen() {
   const router = useRouter();
-
-  useInitApp();
 
   const { profile, isLoading: authLoading, user } = useAuthStore();
   const { books, isLoading: booksLoading, fetchBooks } = useBookStore();

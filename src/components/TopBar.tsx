@@ -127,6 +127,30 @@ export function TopBar({ name }: { name: string }) {
             </TouchableOpacity>
 
             <TouchableOpacity
+              onPress={() => {
+                setOpenMenu(false);
+                router.push("/admin/users");
+              }}
+              style={{ paddingHorizontal: 12, paddingVertical: 10 }}
+            >
+              <Text style={{ color: "#6366F1", fontWeight: "600" }}>
+                Admin Usuarios
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              onPress={() => {
+                setOpenMenu(false);
+                router.push("/admin/books");
+              }}
+              style={{ paddingHorizontal: 12, paddingVertical: 10 }}
+            >
+              <Text style={{ color: "#6366F1", fontWeight: "600" }}>
+                Admin Libros
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
               onPress={handleClearData}
               style={{ paddingHorizontal: 12, paddingVertical: 10 }}
             >

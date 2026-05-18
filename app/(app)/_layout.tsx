@@ -1,8 +1,8 @@
 import { BottomNav } from "@/src/components/BottomNavs";
 import { TopBar } from "@/src/components/TopBar";
 import { useInitApp } from "@/src/hooks/useInitApp";
-import { usePrefsStore } from "@/src/store/prefsStore";
 import { useAuthStore } from "@/src/store/authStore";
+import { usePrefsStore } from "@/src/store/prefsStore";
 
 import { Slot, useRouter } from "expo-router";
 import { ActivityIndicator, View } from "react-native";
@@ -15,8 +15,7 @@ export default function Layout() {
   const user = useAuthStore((s) => s.user);
   const isLoading = useAuthStore((s) => s.isLoading);
   const nativeLang = usePrefsStore((s) => s.nativeLanguage);
-  const targetLang = usePrefsStore((s) => s.targetLanguage);
-  const hasPrefs = nativeLang != null && targetLang != null;
+  const hasPrefs = nativeLang != null;
 
   // Mientras carga auth, mostrar spinner
   if (isLoading) {
@@ -39,7 +38,7 @@ export default function Layout() {
     return null;
   }
 
-  // Todo listo → mostrar app
+  // Todo listo → mostrar inicio
   return (
     <View style={{ flex: 1 }}>
       <View style={{ zIndex: 2000, elevation: 2000 }}>

@@ -199,7 +199,11 @@ export default function Profile() {
               justifyContent: "space-between",
             }}
           >
-            <Text style={{ color: "#64748B" }}>{e.source}</Text>
+            <Text style={{ color: "#64748B" }}>
+              {e.source === "reading" ? "Sesión de lectura" :
+               e.source === "book_completed" ? "Libro completado" :
+               e.source === "trophy" ? "Logro" : e.source}
+            </Text>
             <Text style={{ fontWeight: "700", color: "#6366F1" }}>
               +{e.amount} XP
             </Text>
