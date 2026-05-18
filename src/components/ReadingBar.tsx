@@ -136,12 +136,13 @@ export function ReadingBar({
 
   return (
     <View>
+      {/* Fila 1: título, settings, paginación */}
       <View
         style={{
           flexDirection: "row",
           alignItems: "center",
           paddingHorizontal: 16,
-          paddingVertical: 10,
+          paddingVertical: 8,
           gap: 8,
         }}
       >
@@ -156,13 +157,6 @@ export function ReadingBar({
           {title}
         </Text>
 
-        <LangDropdown value={langTop} onChange={onLangTopChange} label="" />
-        <LangDropdown
-          value={langBottom}
-          onChange={onLangBottomChange}
-          label=""
-        />
-
         <TouchableOpacity onPress={() => setOpenSettings(true)}>
           <Text style={{ fontSize: 20 }}>⚙️</Text>
         </TouchableOpacity>
@@ -170,6 +164,23 @@ export function ReadingBar({
         <Text style={{ fontSize: 12, color: "#94A3B8" }}>
           {currentPage} / {totalPages}
         </Text>
+      </View>
+
+      {/* Fila 2: selectores de idioma */}
+      <View
+        style={{
+          flexDirection: "row",
+          justifyContent: "center",
+          gap: 24,
+          paddingBottom: 6,
+        }}
+      >
+        <LangDropdown value={langTop} onChange={onLangTopChange} label="Arriba" />
+        <LangDropdown
+          value={langBottom}
+          onChange={onLangBottomChange}
+          label="Abajo"
+        />
       </View>
 
       <View style={{ height: 3, backgroundColor: "#E2E8F0" }}>
