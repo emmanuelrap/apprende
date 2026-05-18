@@ -117,6 +117,7 @@ export function InterleavedReader({
                   lineHeight: fontSize + 12,
                   fontSize,
                   color: colors.text,
+                  fontStyle: item.lang === langBottom ? "italic" : "normal",
                 }}
               >
                 {words.map((word, wIndex) => (
