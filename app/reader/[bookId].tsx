@@ -58,6 +58,8 @@ export default function ReaderScreen() {
   const [langTop, setLangTop] = useState<Language>("en");
   const [langBottom, setLangBottom] = useState<Language>("es");
   const [activeParagraph, setActiveParagraph] = useState<number | null>(null);
+  const toggleParagraph = (index: number | null) =>
+    setActiveParagraph((prev) => (prev === index ? null : index));
 
   const startTimeRef = useRef(Date.now());
   const pagesReadRef = useRef(0);
@@ -178,7 +180,7 @@ export default function ReaderScreen() {
           bookId={bookId}
           pageId={page?.id ?? ""}
           activeParagraph={activeParagraph}
-          onParagraphPress={setActiveParagraph}
+          onParagraphPress={toggleParagraph}
           fontSize={fontSize}
           theme={theme}
         />
@@ -191,7 +193,7 @@ export default function ReaderScreen() {
           bookId={bookId}
           pageId={page?.id ?? ""}
           activeParagraph={activeParagraph}
-          onParagraphPress={setActiveParagraph}
+          onParagraphPress={toggleParagraph}
           fontSize={fontSize}
           theme={theme}
         />
@@ -202,7 +204,7 @@ export default function ReaderScreen() {
           bookId={bookId}
           pageId={page?.id ?? ""}
           activeParagraph={activeParagraph}
-          onParagraphPress={setActiveParagraph}
+          onParagraphPress={toggleParagraph}
           fontSize={fontSize}
           theme={theme}
         />
