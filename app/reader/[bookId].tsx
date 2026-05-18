@@ -63,6 +63,7 @@ export default function ReaderScreen() {
 
   const startTimeRef = useRef(Date.now());
   const pagesReadRef = useRef(0);
+  const initialLoadDone = useRef(false);
 
   const loadPage = useCallback(
     async (pageNumber: number) => {
@@ -88,6 +89,7 @@ export default function ReaderScreen() {
       setXpBefore(xpBefore);
       await loadPage(1);
       await saveProgress(user.id, bookId, 1, totalPages);
+      initialLoadDone.current = true;
     };
     init();
   }, [bookId, user]);
@@ -95,7 +97,7 @@ export default function ReaderScreen() {
   // cambio de página
   useEffect(() => {
     setActiveParagraph(null);
-    if (!bookId || !user || currentPage === 1) return;
+    if (!bookId || !user || !initialLoadDone.current) return;
     loadPage(currentPage);
     saveProgress(user.id, bookId, currentPage, totalPages);
     pagesReadRef.current += 1;
