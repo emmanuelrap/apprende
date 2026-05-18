@@ -6,6 +6,7 @@ import { createJSONStorage, persist } from "zustand/middleware";
 type AppSettings = {
   fontSize: number;
   theme: Theme;
+  readerMode: "dual" | "interleaved";
 };
 
 type PrefsStore = {
@@ -22,7 +23,7 @@ export const usePrefsStore = create<PrefsStore>()(
     (set) => ({
       nativeLanguage: null,
       interests: [],
-      appSettings: { fontSize: 16, theme: "light" },
+      appSettings: { fontSize: 16, theme: "light", readerMode: "dual" },
       setNativeLanguage: (lang) => set({ nativeLanguage: lang }),
       setInterests: (categoryIds) => set({ interests: categoryIds }),
       setAppSettings: (settings) =>

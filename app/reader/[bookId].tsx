@@ -1,4 +1,5 @@
-import { PageContent } from "@/src/components/PageContent";
+import { DualPanelReader } from "@/src/components/DualPanelReader";
+import { InterleavedReader } from "@/src/components/InterleavedReader";
 import { ReadingBar } from "@/src/components/ReadingBar";
 import { BookCompletedScreen } from "@/src/screens/BookCompletedScreen";
 import { useAuthStore } from "@/src/store/authStore";
@@ -10,7 +11,6 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
-  ScrollView,
   Text,
   TouchableOpacity,
   View,
@@ -43,6 +43,7 @@ export default function ReaderScreen() {
 
   const fontSize = usePrefsStore((state) => state.appSettings.fontSize);
   const theme = usePrefsStore((state) => state.appSettings.theme);
+  const readerMode = usePrefsStore((state) => state.appSettings.readerMode);
   const setAppSettings = usePrefsStore((state) => state.setAppSettings);
 
   const [page, setPage] = useState<Page | null>(null);
@@ -161,53 +162,38 @@ export default function ReaderScreen() {
         onFontSizeChange={(s) => setAppSettings({ fontSize: s })}
         theme={theme}
         onThemeChange={(t) => setAppSettings({ theme: t })}
+        readerMode={readerMode}
+        onReaderModeChange={(m) => setAppSettings({ readerMode: m })}
       />
 
       {loading || !page ? (
         <ActivityIndicator style={{ flex: 1 }} />
+      ) : readerMode === "dual" ? (
+        <DualPanelReader
+          contentTop={getContent(langTop) ?? ""}
+          contentBottom={getContent(langBottom) ?? ""}
+          langTop={langTop}
+          langBottom={langBottom}
+          bookId={bookId}
+          pageId={page?.id ?? ""}
+          activeParagraph={activeParagraph}
+          onParagraphPress={setActiveParagraph}
+          fontSize={fontSize}
+          theme={theme}
+        />
       ) : (
-        <View style={{ flex: 1 }}>
-          {/* mitad superior */}
-          <View
-            style={{
-              flex: 1,
-              padding: 16,
-              borderBottomWidth: 1,
-              borderColor: theme === "dark" ? "#333" : "#ddd",
-              backgroundColor: colors.bg,
-            }}
-          >
-            <ScrollView>
-              <PageContent
-                content={getContent(langTop) ?? ""}
-                language={langTop}
-                bookId={bookId}
-                pageId={page?.id ?? ""}
-                activeParagraph={activeParagraph}
-                onParagraphPress={setActiveParagraph}
-                fontSize={fontSize}
-                theme={theme}
-              />
-            </ScrollView>
-          </View>
-
-          {/* mitad inferior */}
-          <View style={{ flex: 1, padding: 16, backgroundColor: colors.bg }}>
-            <ScrollView>
-              <PageContent
-                content={getContent(langBottom) ?? ""}
-                language={langBottom}
-                bookId={bookId}
-                pageId={page?.id ?? ""}
-                readonly
-                activeParagraph={activeParagraph}
-                onParagraphPress={setActiveParagraph}
-                fontSize={fontSize}
-                theme={theme}
-              />
-            </ScrollView>
-          </View>
-        </View>
+        <InterleavedReader
+          contentTop={getContent(langTop) ?? ""}
+          contentBottom={getContent(langBottom) ?? ""}
+          langTop={langTop}
+          langBottom={langBottom}
+          bookId={bookId}
+          pageId={page?.id ?? ""}
+          activeParagraph={activeParagraph}
+          onParagraphPress={setActiveParagraph}
+          fontSize={fontSize}
+          theme={theme}
+        />
       )}
 
       {/* footer */}
