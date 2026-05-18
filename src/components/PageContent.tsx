@@ -99,6 +99,14 @@ export function PageContent({
                   <Text
                     key={wIndex}
                     onPress={() => onParagraphPress(pIndex)}
+                    onLongPress={() => {
+                      if (readonly) return;
+                      openModal({
+                        type: "word",
+                        content: word.replace(/[^a-zA-ZáéíóúñüÁÉÍÓÚÑÜ']/g, ""),
+                        context: paragraph,
+                      });
+                    }}
                     style={{
                       color: THEME_COLORS[theme].text,
                       backgroundColor: isActive ? THEME_COLORS[theme].highlight : "transparent",
