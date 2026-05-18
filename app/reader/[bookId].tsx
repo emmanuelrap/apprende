@@ -24,11 +24,6 @@ type Page = {
 
 type Language = "es" | "en";
 
-const LANGUAGES: { label: string; value: Language }[] = [
-  { label: "English", value: "en" },
-  { label: "Español", value: "es" },
-];
-
 export default function ReaderScreen() {
   const { bookId } = useLocalSearchParams<{ bookId: string }>();
   const router = useRouter();
@@ -54,7 +49,6 @@ export default function ReaderScreen() {
   const [loading, setLoading] = useState(true);
   const [langTop, setLangTop] = useState<Language>("en");
   const [langBottom, setLangBottom] = useState<Language>("es");
-  // agrega este estado
   const [activeParagraph, setActiveParagraph] = useState<number | null>(null);
 
   const startTimeRef = useRef(Date.now());
@@ -134,38 +128,6 @@ export default function ReaderScreen() {
   const getContent = (lang: Language) =>
     lang === "es" ? page?.contentEs : page?.contentEn;
 
-  const LangSelector = ({
-    selected,
-    onChange,
-  }: {
-    selected: Language;
-    onChange: (l: Language) => void;
-  }) => (
-    <View style={{ flexDirection: "row", gap: 8, marginBottom: 8 }}>
-      {LANGUAGES.map((l) => (
-        <TouchableOpacity
-          key={l.value}
-          onPress={() => onChange(l.value)}
-          style={{
-            paddingHorizontal: 12,
-            paddingVertical: 4,
-            borderRadius: 20,
-            backgroundColor: selected === l.value ? "#000" : "#eee",
-          }}
-        >
-          <Text
-            style={{
-              color: selected === l.value ? "#fff" : "#000",
-              fontSize: 12,
-            }}
-          >
-            {l.label}
-          </Text>
-        </TouchableOpacity>
-      ))}
-    </View>
-  );
-
   if (completed) {
     return (
       <BookCompletedScreen
@@ -183,7 +145,10 @@ export default function ReaderScreen() {
         title={bookTitle}
         currentPage={currentPage}
         totalPages={totalPages}
-        onSettings={() => {}}
+        langTop={langTop}
+        langBottom={langBottom}
+        onLangTopChange={(lang) => setLangTop(lang as Language)}
+        onLangBottomChange={(lang) => setLangBottom(lang as Language)}
       />
 
       {loading || !page ? (
@@ -199,7 +164,6 @@ export default function ReaderScreen() {
               borderColor: "#ddd",
             }}
           >
-            <LangSelector selected={langTop} onChange={setLangTop} />
             <ScrollView>
               <PageContent
                 content={getContent(langTop) ?? ""}
@@ -214,7 +178,6 @@ export default function ReaderScreen() {
 
           {/* mitad inferior */}
           <View style={{ flex: 1, padding: 16 }}>
-            <LangSelector selected={langBottom} onChange={setLangBottom} />
             <ScrollView>
               <PageContent
                 content={getContent(langBottom) ?? ""}

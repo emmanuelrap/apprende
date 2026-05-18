@@ -30,6 +30,7 @@ type AuthStore = {
   logout: () => Promise<void>;
   clearMyData: () => Promise<void>;
   reset: () => void;
+  setLoadingDone: () => void;
   fetchXpEvents: (userId: string) => Promise<void>;
 };
 
@@ -58,11 +59,11 @@ export const useAuthStore = create<AuthStore>((set) => ({
         .single();
 
       if (profileError) {
-        set({ user, profile: null, isLoading: false });
+        set({ user, profile: null });
         return;
       }
 
-      set({ user, profile: profileData, isLoading: false });
+      set({ user, profile: profileData });
     } catch {
       set({
         error: "Error al cargar autenticación",
@@ -136,4 +137,6 @@ export const useAuthStore = create<AuthStore>((set) => ({
       error: null,
       isLoading: false,
     }),
+
+  setLoadingDone: () => set({ isLoading: false }),
 }));
