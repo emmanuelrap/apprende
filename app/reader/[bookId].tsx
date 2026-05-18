@@ -50,6 +50,7 @@ export default function ReaderScreen() {
   const [langTop, setLangTop] = useState<Language>("en");
   const [langBottom, setLangBottom] = useState<Language>("es");
   const [fontSize, setFontSize] = useState(16);
+  const [theme, setTheme] = useState<"light" | "sepia" | "dark">("light");
   const [activeParagraph, setActiveParagraph] = useState<number | null>(null);
 
   const startTimeRef = useRef(Date.now());
@@ -152,6 +153,8 @@ export default function ReaderScreen() {
         onLangBottomChange={(lang) => setLangBottom(lang as Language)}
         fontSize={fontSize}
         onFontSizeChange={setFontSize}
+        theme={theme}
+        onThemeChange={setTheme}
       />
 
       {loading || !page ? (
@@ -176,6 +179,7 @@ export default function ReaderScreen() {
                 activeParagraph={activeParagraph}
                 onParagraphPress={setActiveParagraph}
                 fontSize={fontSize}
+                theme={theme}
               />
             </ScrollView>
           </View>
@@ -192,6 +196,7 @@ export default function ReaderScreen() {
                 activeParagraph={activeParagraph}
                 onParagraphPress={setActiveParagraph}
                 fontSize={fontSize}
+                theme={theme}
               />
             </ScrollView>
           </View>

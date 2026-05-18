@@ -9,6 +9,14 @@ const LANGUAGES = [
 
 const FONT_SIZES = [14, 16, 18, 20, 22, 24];
 
+type Theme = "light" | "sepia" | "dark";
+
+const THEMES: { key: Theme; label: string; emoji: string; desc: string }[] = [
+  { key: "light", label: "Claro", emoji: "☀️", desc: "Blanco" },
+  { key: "sepia", label: "Sepia", emoji: "🟤", desc: "Cálido" },
+  { key: "dark", label: "Oscuro", emoji: "🌙", desc: "Oscuro" },
+];
+
 type Props = {
   title: string;
   currentPage: number;
@@ -19,6 +27,8 @@ type Props = {
   onLangBottomChange: (lang: string) => void;
   fontSize: number;
   onFontSizeChange: (size: number) => void;
+  theme: Theme;
+  onThemeChange: (theme: Theme) => void;
 };
 
 function LangDropdown({
@@ -116,6 +126,8 @@ export function ReadingBar({
   onLangBottomChange,
   fontSize,
   onFontSizeChange,
+  theme,
+  onThemeChange,
 }: Props) {
   const router = useRouter();
   const [openSettings, setOpenSettings] = useState(false);
@@ -144,8 +156,12 @@ export function ReadingBar({
           {title}
         </Text>
 
-        <LangDropdown value={langTop} onChange={onLangTopChange} label="Arriba" />
-        <LangDropdown value={langBottom} onChange={onLangBottomChange} label="Abajo" />
+        <LangDropdown value={langTop} onChange={onLangTopChange} label="" />
+        <LangDropdown
+          value={langBottom}
+          onChange={onLangBottomChange}
+          label=""
+        />
 
         <TouchableOpacity onPress={() => setOpenSettings(true)}>
           <Text style={{ fontSize: 20 }}>⚙️</Text>
@@ -181,65 +197,96 @@ export function ReadingBar({
               backgroundColor: "#fff",
               borderRadius: 14,
               padding: 24,
-              minWidth: 240,
+              minWidth: 260,
               shadowOpacity: 0.15,
               shadowRadius: 12,
               elevation: 20,
+              gap: 20,
             }}
           >
-            <Text style={{ fontSize: 16, fontWeight: "700", marginBottom: 16, textAlign: "center" }}>
-              Tamaño de letra
-            </Text>
-
-            <View style={{ flexDirection: "row", gap: 8, justifyContent: "center" }}>
-              <TouchableOpacity
-                onPress={() => onFontSizeChange(Math.max(12, fontSize - 2))}
-                style={{
-                  paddingHorizontal: 16,
-                  paddingVertical: 10,
-                  borderRadius: 8,
-                  backgroundColor: "#E2E8F0",
-                }}
-              >
-                <Text style={{ fontSize: 14 }}>A−</Text>
-              </TouchableOpacity>
-
-              {FONT_SIZES.map((size) => (
-                <TouchableOpacity
-                  key={size}
-                  onPress={() => onFontSizeChange(size)}
-                  style={{
-                    width: 36,
-                    height: 36,
-                    borderRadius: 8,
-                    backgroundColor: fontSize === size ? "#1A7A6E" : "#E2E8F0",
-                    alignItems: "center",
-                    justifyContent: "center",
-                  }}
-                >
-                  <Text
+            {/* Tema */}
+            <View>
+              <Text style={{ fontSize: 15, fontWeight: "700", marginBottom: 12, textAlign: "center" }}>
+                Tema
+              </Text>
+              <View style={{ flexDirection: "row", gap: 8, justifyContent: "center" }}>
+                {THEMES.map((t) => (
+                  <TouchableOpacity
+                    key={t.key}
+                    onPress={() => onThemeChange(t.key)}
                     style={{
-                      fontSize: 13,
-                      fontWeight: "600",
-                      color: fontSize === size ? "#fff" : "#1C1C1E",
+                      flex: 1,
+                      paddingVertical: 12,
+                      borderRadius: 10,
+                      alignItems: "center",
+                      borderWidth: 2,
+                      borderColor: theme === t.key ? "#1A7A6E" : "#E5E7EB",
+                      backgroundColor: theme === t.key ? "#E8F5F3" : "#fff",
                     }}
                   >
-                    {size}
-                  </Text>
-                </TouchableOpacity>
-              ))}
+                    <Text style={{ fontSize: 20 }}>{t.emoji}</Text>
+                    <Text style={{ fontSize: 12, fontWeight: "600", marginTop: 4 }}>{t.label}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
 
-              <TouchableOpacity
-                onPress={() => onFontSizeChange(Math.min(28, fontSize + 2))}
-                style={{
-                  paddingHorizontal: 16,
-                  paddingVertical: 10,
-                  borderRadius: 8,
-                  backgroundColor: "#E2E8F0",
-                }}
-              >
-                <Text style={{ fontSize: 14 }}>A+</Text>
-              </TouchableOpacity>
+            {/* Tamaño de letra */}
+            <View>
+              <Text style={{ fontSize: 15, fontWeight: "700", marginBottom: 12, textAlign: "center" }}>
+                Tamaño de letra
+              </Text>
+
+              <View style={{ flexDirection: "row", gap: 8, justifyContent: "center", alignItems: "center" }}>
+                <TouchableOpacity
+                  onPress={() => onFontSizeChange(Math.max(12, fontSize - 2))}
+                  style={{
+                    paddingHorizontal: 14,
+                    paddingVertical: 10,
+                    borderRadius: 8,
+                    backgroundColor: "#E2E8F0",
+                  }}
+                >
+                  <Text style={{ fontSize: 14 }}>A−</Text>
+                </TouchableOpacity>
+
+                {FONT_SIZES.map((size) => (
+                  <TouchableOpacity
+                    key={size}
+                    onPress={() => onFontSizeChange(size)}
+                    style={{
+                      width: 34,
+                      height: 34,
+                      borderRadius: 8,
+                      backgroundColor: fontSize === size ? "#1A7A6E" : "#E2E8F0",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    <Text
+                      style={{
+                        fontSize: 12,
+                        fontWeight: "600",
+                        color: fontSize === size ? "#fff" : "#1C1C1E",
+                      }}
+                    >
+                      {size}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+
+                <TouchableOpacity
+                  onPress={() => onFontSizeChange(Math.min(28, fontSize + 2))}
+                  style={{
+                    paddingHorizontal: 14,
+                    paddingVertical: 10,
+                    borderRadius: 8,
+                    backgroundColor: "#E2E8F0",
+                  }}
+                >
+                  <Text style={{ fontSize: 14 }}>A+</Text>
+                </TouchableOpacity>
+              </View>
             </View>
           </View>
         </Pressable>

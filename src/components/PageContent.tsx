@@ -5,6 +5,14 @@ import { Modal, Text, TextInput, TouchableOpacity, View } from "react-native";
 
 type Language = "es" | "en";
 
+type Theme = "light" | "sepia" | "dark";
+
+const THEME_COLORS: Record<Theme, { bg: string; text: string; highlight: string }> = {
+  light: { bg: "#FFFFFF", text: "#1C1C1E", highlight: "#eda98c" },
+  sepia: { bg: "#F5F0E8", text: "#3C2F1F", highlight: "#d4a574" },
+  dark: { bg: "#1C1C1E", text: "#E5E5E5", highlight: "#4A4A6A" },
+};
+
 type Props = {
   content: string;
   language: Language;
@@ -14,6 +22,7 @@ type Props = {
   activeParagraph: number | null;
   onParagraphPress: (index: number | null) => void;
   fontSize?: number;
+  theme?: Theme;
 };
 
 type SaveItem = {
@@ -31,6 +40,7 @@ export function PageContent({
   activeParagraph,
   onParagraphPress,
   fontSize = 16,
+  theme = "light",
 }: Props) {
   const user = useAuthStore((state) => state.user);
   const addItem = useVocabularyStore((state) => state.addItem);
@@ -90,14 +100,14 @@ export function PageContent({
               activeOpacity={1}
               className="p-2 "
             >
-              <Text style={{ lineHeight: fontSize + 12, fontSize }}>
+              <Text style={{ lineHeight: fontSize + 12, fontSize, color: THEME_COLORS[theme].text }}>
                 {words.map((word, wIndex) => (
                   <Text
                     key={wIndex}
                     onPress={() => onParagraphPress(pIndex)}
                     style={{
-                      color: "#1E293B",
-                      backgroundColor: isActive ? "#eda98c" : "transparent", // ← aquí
+                      color: THEME_COLORS[theme].text,
+                      backgroundColor: isActive ? THEME_COLORS[theme].highlight : "transparent",
                     }}
                   >
                     {word}
