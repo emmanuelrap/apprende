@@ -2,8 +2,10 @@ import { PageContent } from "@/src/components/PageContent";
 import { ReadingBar } from "@/src/components/ReadingBar";
 import { BookCompletedScreen } from "@/src/screens/BookCompletedScreen";
 import { useAuthStore } from "@/src/store/authStore";
+import { usePrefsStore } from "@/src/store/prefsStore";
 import { useGamificationStore } from "@/src/store/gamificationStore";
 import { useReadingStore } from "@/src/store/readingStore";
+import { THEME_COLORS } from "@/src/theme";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
@@ -39,6 +41,10 @@ export default function ReaderScreen() {
   const finishBook = useReadingStore((state) => state.finishBook);
   const getPage = useReadingStore((state) => state.getPage);
 
+  const fontSize = usePrefsStore((state) => state.appSettings.fontSize);
+  const theme = usePrefsStore((state) => state.appSettings.theme);
+  const setAppSettings = usePrefsStore((state) => state.setAppSettings);
+
   const [page, setPage] = useState<Page | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(0);
@@ -49,8 +55,6 @@ export default function ReaderScreen() {
   const [loading, setLoading] = useState(true);
   const [langTop, setLangTop] = useState<Language>("en");
   const [langBottom, setLangBottom] = useState<Language>("es");
-  const [fontSize, setFontSize] = useState(16);
-  const [theme, setTheme] = useState<"light" | "sepia" | "dark">("light");
   const [activeParagraph, setActiveParagraph] = useState<number | null>(null);
 
   const startTimeRef = useRef(Date.now());
@@ -141,8 +145,10 @@ export default function ReaderScreen() {
     );
   }
 
+  const colors = THEME_COLORS[theme];
+
   return (
-    <SafeAreaView style={{ flex: 1 }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
       <ReadingBar
         title={bookTitle}
         currentPage={currentPage}
@@ -152,9 +158,9 @@ export default function ReaderScreen() {
         onLangTopChange={(lang) => setLangTop(lang as Language)}
         onLangBottomChange={(lang) => setLangBottom(lang as Language)}
         fontSize={fontSize}
-        onFontSizeChange={setFontSize}
+        onFontSizeChange={(s) => setAppSettings({ fontSize: s })}
         theme={theme}
-        onThemeChange={setTheme}
+        onThemeChange={(t) => setAppSettings({ theme: t })}
       />
 
       {loading || !page ? (
@@ -167,7 +173,8 @@ export default function ReaderScreen() {
               flex: 1,
               padding: 16,
               borderBottomWidth: 1,
-              borderColor: "#ddd",
+              borderColor: theme === "dark" ? "#333" : "#ddd",
+              backgroundColor: colors.bg,
             }}
           >
             <ScrollView>
@@ -185,7 +192,7 @@ export default function ReaderScreen() {
           </View>
 
           {/* mitad inferior */}
-          <View style={{ flex: 1, padding: 16 }}>
+          <View style={{ flex: 1, padding: 16, backgroundColor: colors.bg }}>
             <ScrollView>
               <PageContent
                 content={getContent(langBottom) ?? ""}
@@ -208,20 +215,22 @@ export default function ReaderScreen() {
         style={{
           paddingHorizontal: 20,
           paddingBottom: 20,
+          paddingTop: 10,
           flexDirection: "row",
           justifyContent: "space-between",
           borderTopWidth: 1,
-          borderColor: "#ddd",
+          borderColor: theme === "dark" ? "#333" : "#ddd",
+          backgroundColor: colors.bg,
         }}
       >
         <TouchableOpacity onPress={prevPage}>
-          <Text>⬅️ Anterior</Text>
+          <Text style={{ color: colors.text }}>⬅️ Anterior</Text>
         </TouchableOpacity>
-        <Text>
+        <Text style={{ color: colors.text }}>
           {currentPage} / {totalPages}
         </Text>
         <TouchableOpacity onPress={nextPage}>
-          <Text>
+          <Text style={{ color: colors.text }}>
             ➡️ {currentPage === totalPages ? "Terminar" : "Siguiente"}
           </Text>
         </TouchableOpacity>
