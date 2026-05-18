@@ -7,6 +7,8 @@ const LANGUAGES = [
   { label: "Español", value: "es" },
 ];
 
+const FONT_SIZES = [14, 16, 18, 20, 22, 24];
+
 type Props = {
   title: string;
   currentPage: number;
@@ -15,6 +17,8 @@ type Props = {
   langBottom: string;
   onLangTopChange: (lang: string) => void;
   onLangBottomChange: (lang: string) => void;
+  fontSize: number;
+  onFontSizeChange: (size: number) => void;
 };
 
 function LangDropdown({
@@ -30,7 +34,9 @@ function LangDropdown({
 
   return (
     <View style={{ alignItems: "center", gap: 2 }}>
-      <Text style={{ fontSize: 9, color: "#94A3B8", fontWeight: "500" }}>{label}</Text>
+      <Text style={{ fontSize: 9, color: "#94A3B8", fontWeight: "500" }}>
+        {label}
+      </Text>
       <TouchableOpacity
         onPress={() => setOpen(true)}
         style={{
@@ -47,7 +53,12 @@ function LangDropdown({
 
       <Modal visible={open} transparent animationType="fade">
         <Pressable
-          style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.3)", justifyContent: "center", alignItems: "center" }}
+          style={{
+            flex: 1,
+            backgroundColor: "rgba(0,0,0,0.3)",
+            justifyContent: "center",
+            alignItems: "center",
+          }}
           onPress={() => setOpen(false)}
         >
           <View
@@ -103,8 +114,11 @@ export function ReadingBar({
   langBottom,
   onLangTopChange,
   onLangBottomChange,
+  fontSize,
+  onFontSizeChange,
 }: Props) {
   const router = useRouter();
+  const [openSettings, setOpenSettings] = useState(false);
   const progress =
     totalPages > 0 ? Math.round((currentPage / totalPages) * 100) : 0;
 
@@ -133,6 +147,10 @@ export function ReadingBar({
         <LangDropdown value={langTop} onChange={onLangTopChange} label="Arriba" />
         <LangDropdown value={langBottom} onChange={onLangBottomChange} label="Abajo" />
 
+        <TouchableOpacity onPress={() => setOpenSettings(true)}>
+          <Text style={{ fontSize: 20 }}>⚙️</Text>
+        </TouchableOpacity>
+
         <Text style={{ fontSize: 12, color: "#94A3B8" }}>
           {currentPage} / {totalPages}
         </Text>
@@ -147,6 +165,85 @@ export function ReadingBar({
           }}
         />
       </View>
+
+      <Modal visible={openSettings} transparent animationType="fade">
+        <Pressable
+          style={{
+            flex: 1,
+            backgroundColor: "rgba(0,0,0,0.3)",
+            justifyContent: "center",
+            alignItems: "center",
+          }}
+          onPress={() => setOpenSettings(false)}
+        >
+          <View
+            style={{
+              backgroundColor: "#fff",
+              borderRadius: 14,
+              padding: 24,
+              minWidth: 240,
+              shadowOpacity: 0.15,
+              shadowRadius: 12,
+              elevation: 20,
+            }}
+          >
+            <Text style={{ fontSize: 16, fontWeight: "700", marginBottom: 16, textAlign: "center" }}>
+              Tamaño de letra
+            </Text>
+
+            <View style={{ flexDirection: "row", gap: 8, justifyContent: "center" }}>
+              <TouchableOpacity
+                onPress={() => onFontSizeChange(Math.max(12, fontSize - 2))}
+                style={{
+                  paddingHorizontal: 16,
+                  paddingVertical: 10,
+                  borderRadius: 8,
+                  backgroundColor: "#E2E8F0",
+                }}
+              >
+                <Text style={{ fontSize: 14 }}>A−</Text>
+              </TouchableOpacity>
+
+              {FONT_SIZES.map((size) => (
+                <TouchableOpacity
+                  key={size}
+                  onPress={() => onFontSizeChange(size)}
+                  style={{
+                    width: 36,
+                    height: 36,
+                    borderRadius: 8,
+                    backgroundColor: fontSize === size ? "#1A7A6E" : "#E2E8F0",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <Text
+                    style={{
+                      fontSize: 13,
+                      fontWeight: "600",
+                      color: fontSize === size ? "#fff" : "#1C1C1E",
+                    }}
+                  >
+                    {size}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+
+              <TouchableOpacity
+                onPress={() => onFontSizeChange(Math.min(28, fontSize + 2))}
+                style={{
+                  paddingHorizontal: 16,
+                  paddingVertical: 10,
+                  borderRadius: 8,
+                  backgroundColor: "#E2E8F0",
+                }}
+              >
+                <Text style={{ fontSize: 14 }}>A+</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Pressable>
+      </Modal>
     </View>
   );
 }

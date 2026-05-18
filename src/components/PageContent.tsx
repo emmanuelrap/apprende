@@ -10,9 +10,10 @@ type Props = {
   language: Language;
   bookId: string;
   pageId: string;
-  readonly?: boolean; // panel inferior = no guarda
-  activeParagraph: number | null; // índice activo desde el padre
-  onParagraphPress: (index: number | null) => void; // notifica al padre
+  readonly?: boolean;
+  activeParagraph: number | null;
+  onParagraphPress: (index: number | null) => void;
+  fontSize?: number;
 };
 
 type SaveItem = {
@@ -29,6 +30,7 @@ export function PageContent({
   readonly = false,
   activeParagraph,
   onParagraphPress,
+  fontSize = 16,
 }: Props) {
   const user = useAuthStore((state) => state.user);
   const addItem = useVocabularyStore((state) => state.addItem);
@@ -88,7 +90,7 @@ export function PageContent({
               activeOpacity={1}
               className="p-2 "
             >
-              <Text style={{ lineHeight: 28, fontSize: 16 }}>
+              <Text style={{ lineHeight: fontSize + 12, fontSize }}>
                 {words.map((word, wIndex) => (
                   <Text
                     key={wIndex}
