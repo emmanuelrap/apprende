@@ -6,7 +6,7 @@ import { createJSONStorage, persist } from "zustand/middleware";
 type AppSettings = {
   fontSize: number;
   theme: Theme;
-  readerMode: "dual" | "interleaved";
+  readerMode: "dual" | "interleaved" | "single";
 };
 
 type PrefsStore = {

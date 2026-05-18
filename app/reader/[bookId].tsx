@@ -1,5 +1,6 @@
 import { DualPanelReader } from "@/src/components/DualPanelReader";
 import { InterleavedReader } from "@/src/components/InterleavedReader";
+import { SingleReader } from "@/src/components/SingleReader";
 import { ReadingBar } from "@/src/components/ReadingBar";
 import { BookCompletedScreen } from "@/src/screens/BookCompletedScreen";
 import { useAuthStore } from "@/src/store/authStore";
@@ -181,12 +182,23 @@ export default function ReaderScreen() {
           fontSize={fontSize}
           theme={theme}
         />
-      ) : (
+      ) : readerMode === "interleaved" ? (
         <InterleavedReader
           contentTop={getContent(langTop) ?? ""}
           contentBottom={getContent(langBottom) ?? ""}
           langTop={langTop}
           langBottom={langBottom}
+          bookId={bookId}
+          pageId={page?.id ?? ""}
+          activeParagraph={activeParagraph}
+          onParagraphPress={setActiveParagraph}
+          fontSize={fontSize}
+          theme={theme}
+        />
+      ) : (
+        <SingleReader
+          content={getContent(langTop) ?? ""}
+          language={langTop}
           bookId={bookId}
           pageId={page?.id ?? ""}
           activeParagraph={activeParagraph}

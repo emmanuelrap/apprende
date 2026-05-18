@@ -29,8 +29,8 @@ type Props = {
   onFontSizeChange: (size: number) => void;
   theme: Theme;
   onThemeChange: (theme: Theme) => void;
-  readerMode: "dual" | "interleaved";
-  onReaderModeChange: (mode: "dual" | "interleaved") => void;
+  readerMode: "dual" | "interleaved" | "single";
+  onReaderModeChange: (mode: "dual" | "interleaved" | "single") => void;
 };
 
 function LangDropdown({
@@ -183,9 +183,10 @@ export function ReadingBar({
         <LangDropdown value={langTop} onChange={onLangTopChange} label="" />
 
         <TouchableOpacity
-          onPress={() =>
-            onReaderModeChange(readerMode === "dual" ? "interleaved" : "dual")
-          }
+          onPress={() => {
+            const next = { dual: "interleaved", interleaved: "single", single: "dual" } as const;
+            onReaderModeChange(next[readerMode]);
+          }}
           style={{
             paddingHorizontal: 10,
             paddingVertical: 5,
@@ -194,7 +195,7 @@ export function ReadingBar({
           }}
         >
           <Text style={{ fontSize: 12, fontWeight: "600" }}>
-            {readerMode === "dual" ? "☗ Dual" : "⇄ Alternado"}
+            {readerMode === "dual" ? "☗ Dual" : readerMode === "interleaved" ? "⇄ Alternado" : "◉ 1 idioma"}
           </Text>
         </TouchableOpacity>
 
