@@ -175,11 +175,11 @@ export function ReadingBar({
           paddingBottom: 6,
         }}
       >
-        <LangDropdown value={langTop} onChange={onLangTopChange} label="Arriba" />
+        <LangDropdown value={langTop} onChange={onLangTopChange} label="" />
         <LangDropdown
           value={langBottom}
           onChange={onLangBottomChange}
-          label="Abajo"
+          label=""
         />
       </View>
 
