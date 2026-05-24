@@ -65,17 +65,43 @@ export default function ReaderScreen() {
   const pagesReadRef = useRef(0);
   const initialLoadDone = useRef(false);
 
+  // caché de páginas: { [pageNumber]: Page }
+  // evita fetchear de Supabase si ya se visitó
+  const pageCache = useRef<Record<number, Page>>({});
+
   const loadPage = useCallback(
     async (pageNumber: number) => {
+      // si ya está en caché, lo muestra al instante sin spinner
+      const cached = pageCache.current[pageNumber];
+      if (cached) {
+        setPage(cached);
+        return cached;
+      }
+      // si no está en caché, fetch con spinner
       setLoading(true);
       const data = await getPage(bookId, pageNumber);
-      if (data) setPage(data);
+      if (data) {
+        pageCache.current[pageNumber] = data;
+        setPage(data);
+      }
       setLoading(false);
+      return data;
     },
     [bookId, getPage],
   );
 
-  // init
+  // precarga la página siguiente en background
+  const prefetchNext = useCallback(
+    async (fromPage: number) => {
+      const next = fromPage + 1;
+      if (next > totalPages || pageCache.current[next]) return;
+      const data = await getPage(bookId, next);
+      if (data) pageCache.current[next] = data;
+    },
+    [bookId, getPage, totalPages],
+  );
+
+  // init: carga metadata + páginas 1 y 2 en paralelo
   useEffect(() => {
     if (!bookId || !user) return;
     const init = async () => {
@@ -87,9 +113,25 @@ export default function ReaderScreen() {
       setBookXp(bookXp);
       setBookTitle(bookTitle);
       setXpBefore(xpBefore);
-      await loadPage(1);
+
+      // fetchea pág 1 y pág 2 al mismo tiempo
+      const [page1, page2] = await Promise.all([
+        getPage(bookId, 1),
+        totalPages >= 2 ? getPage(bookId, 2) : Promise.resolve(null),
+      ]);
+      // guarda ambas en caché, pero muestra solo la pág 1
+      if (page1) {
+        pageCache.current[1] = page1;
+        setPage(page1);
+      }
+      if (page2) pageCache.current[2] = page2;
+
+      // oculta el spinner solo cuando ambas están listas
+      setLoading(false);
       await saveProgress(user.id, bookId, 1, totalPages);
       initialLoadDone.current = true;
+      // precarga la pág 3 en background
+      if (totalPages >= 3) prefetchNext(2);
     };
     init();
   }, [bookId, user]);
@@ -101,6 +143,7 @@ export default function ReaderScreen() {
     loadPage(currentPage);
     saveProgress(user.id, bookId, currentPage, totalPages);
     pagesReadRef.current += 1;
+    prefetchNext(currentPage);
   }, [currentPage]);
 
   const nextPage = () => {
@@ -171,76 +214,71 @@ export default function ReaderScreen() {
         onReaderModeChange={(m) => setAppSettings({ readerMode: m })}
       />
 
-      <View style={{ flex: 1 }}>
-        {loading || !page ? (
-          <ActivityIndicator style={{ flex: 1 }} />
-        ) : readerMode === "dual" ? (
-          <DualPanelReader
-            contentTop={getContent(langTop) ?? ""}
-            contentBottom={getContent(langBottom) ?? ""}
-            langTop={langTop}
-            langBottom={langBottom}
-            bookId={bookId}
-            pageId={page?.id ?? ""}
-            activeParagraph={activeParagraph}
-            onParagraphPress={toggleParagraph}
-            fontSize={fontSize}
-            theme={theme}
-          />
-        ) : readerMode === "interleaved" ? (
-          <InterleavedReader
-            contentTop={getContent(langTop) ?? ""}
-            contentBottom={getContent(langBottom) ?? ""}
-            langTop={langTop}
-            langBottom={langBottom}
-            bookId={bookId}
-            pageId={page?.id ?? ""}
-            activeParagraph={activeParagraph}
-            onParagraphPress={toggleParagraph}
-            fontSize={fontSize}
-            theme={theme}
-          />
-        ) : (
-          <SingleReader
-            content={getContent(langTop) ?? ""}
-            language={langTop}
-            bookId={bookId}
-            pageId={page?.id ?? ""}
-            activeParagraph={activeParagraph}
-            onParagraphPress={toggleParagraph}
-            fontSize={fontSize}
-            theme={theme}
-          />
-        )}
-
-        {/* tap zones */}
-        <TouchableOpacity
-          style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: "40%" }}
-          activeOpacity={1}
-          onPress={prevPage}
+      {loading || !page ? (
+        <ActivityIndicator style={{ flex: 1 }} />
+      ) : readerMode === "dual" ? (
+        <DualPanelReader
+          contentTop={getContent(langTop) ?? ""}
+          contentBottom={getContent(langBottom) ?? ""}
+          langTop={langTop}
+          langBottom={langBottom}
+          bookId={bookId}
+          pageId={page?.id ?? ""}
+          activeParagraph={activeParagraph}
+          onParagraphPress={toggleParagraph}
+          fontSize={fontSize}
+          theme={theme}
         />
-        <TouchableOpacity
-          style={{ position: "absolute", right: 0, top: 0, bottom: 0, width: "40%" }}
-          activeOpacity={1}
-          onPress={nextPage}
+      ) : readerMode === "interleaved" ? (
+        <InterleavedReader
+          contentTop={getContent(langTop) ?? ""}
+          contentBottom={getContent(langBottom) ?? ""}
+          langTop={langTop}
+          langBottom={langBottom}
+          bookId={bookId}
+          pageId={page?.id ?? ""}
+          activeParagraph={activeParagraph}
+          onParagraphPress={toggleParagraph}
+          fontSize={fontSize}
+          theme={theme}
         />
+      ) : (
+        <SingleReader
+          content={getContent(langTop) ?? ""}
+          language={langTop}
+          bookId={bookId}
+          pageId={page?.id ?? ""}
+          activeParagraph={activeParagraph}
+          onParagraphPress={toggleParagraph}
+          fontSize={fontSize}
+          theme={theme}
+        />
+      )}
 
-        {/* page indicator */}
-        <View
-          style={{
-            position: "absolute",
-            bottom: 8,
-            alignSelf: "center",
-            paddingHorizontal: 12,
-            paddingVertical: 4,
-            borderRadius: 10,
-            backgroundColor: theme === "dark" ? "rgba(255,255,255,0.15)" : "rgba(0,0,0,0.08)",
-          }}
-        >
-          <Text style={{ fontSize: 12, color: colors.text, opacity: 0.6 }}>
-            {currentPage} / {totalPages}
+      {/* footer */}
+      <View
+        style={{
+          paddingHorizontal: 20,
+          paddingBottom: 20,
+          paddingTop: 10,
+          flexDirection: "row",
+          justifyContent: "space-between",
+          borderTopWidth: 1,
+          borderColor: theme === "dark" ? "#333" : "#ddd",
+          backgroundColor: colors.bg,
+        }}
+      >
+        <TouchableOpacity onPress={prevPage}>
+          <Text style={{ color: colors.text }}>⬅️ Anterior</Text>
+        </TouchableOpacity>
+        <Text style={{ color: colors.text }}>
+          {currentPage} / {totalPages}
+        </Text>
+        <TouchableOpacity onPress={nextPage}>
+          <Text style={{ color: colors.text }}>
+            ➡️ {currentPage === totalPages ? "Terminar" : "Siguiente"}
           </Text>
-        </View>
+        </TouchableOpacity>
       </View>
     </SafeAreaView>
   );

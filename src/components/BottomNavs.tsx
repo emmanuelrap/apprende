@@ -20,6 +20,11 @@ export function BottomNav() {
         onPress={() => router.replace("/home")}
       />
       <NavItem
+        label="Videos"
+        icon="videocam-outline"
+        onPress={() => router.replace("/videos")}
+      />
+      <NavItem
         label="Vocabulario"
         icon="library-outline"
         onPress={() => router.replace("/study")}

@@ -162,13 +162,13 @@ export function ReadingBar({
           {title}
         </Text>
 
+        <Text style={{ fontSize: 12, color: "#94A3B8", marginRight: 8 }}>
+          {currentPage} / {totalPages}
+        </Text>
+
         <TouchableOpacity onPress={() => setOpenSettings(true)}>
           <Text style={{ fontSize: 20 }}>⚙️</Text>
         </TouchableOpacity>
-
-        <Text style={{ fontSize: 12, color: "#94A3B8" }}>
-          {currentPage} / {totalPages}
-        </Text>
       </View>
 
       {/* Fila 2: selectores de idioma + modo */}
