@@ -14,8 +14,11 @@ import { useAuthStore } from "../store/authStore";
 export function TopBar({ name }: { name: string }) {
   const router = useRouter();
   const [openMenu, setOpenMenu] = useState(false);
+  const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((state) => state.logout);
   const clearMyData = useAuthStore((state) => state.clearMyData);
+
+  const isAdmin = user?.email === "emmanuelzzz123@gmail.com";
 
   const handleLogout = async () => {
     await logout();
@@ -126,29 +129,33 @@ export function TopBar({ name }: { name: string }) {
               <Text>Settings</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity
-              onPress={() => {
-                setOpenMenu(false);
-                router.push("/admin/users");
-              }}
-              style={{ paddingHorizontal: 12, paddingVertical: 10 }}
-            >
-              <Text style={{ color: "#6366F1", fontWeight: "600" }}>
-                Admin Usuarios
-              </Text>
-            </TouchableOpacity>
+            {isAdmin && (
+              <>
+                <TouchableOpacity
+                  onPress={() => {
+                    setOpenMenu(false);
+                    router.push("/admin/users");
+                  }}
+                  style={{ paddingHorizontal: 12, paddingVertical: 10 }}
+                >
+                  <Text style={{ color: "#6366F1", fontWeight: "600" }}>
+                    Admin Usuarios
+                  </Text>
+                </TouchableOpacity>
 
-            <TouchableOpacity
-              onPress={() => {
-                setOpenMenu(false);
-                router.push("/admin/books");
-              }}
-              style={{ paddingHorizontal: 12, paddingVertical: 10 }}
-            >
-              <Text style={{ color: "#6366F1", fontWeight: "600" }}>
-                Admin Libros
-              </Text>
-            </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() => {
+                    setOpenMenu(false);
+                    router.push("/admin/books");
+                  }}
+                  style={{ paddingHorizontal: 12, paddingVertical: 10 }}
+                >
+                  <Text style={{ color: "#6366F1", fontWeight: "600" }}>
+                    Admin Libros
+                  </Text>
+                </TouchableOpacity>
+              </>
+            )}
 
             <TouchableOpacity
               onPress={handleClearData}

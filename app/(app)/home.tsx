@@ -2,12 +2,16 @@ import { ChipSelector } from "@/src/components/ChipSelector";
 import { HomeLoading } from "@/src/components/HomeLoading";
 import { SearchInput } from "@/src/components/SearchInput";
 import { TagsTabs } from "@/src/components/TagsTabs";
+import { TrophyUnlockedScreen } from "@/src/screens/TrophyUnlockedScreen";
 import { useAuthStore } from "@/src/store/authStore";
 import { useBookStore } from "@/src/store/bookStore";
 import { useFilterStore } from "@/src/store/filterStore";
-import { useRouter } from "expo-router";
-import { useEffect, useState } from "react";
+import { useGamificationStore } from "@/src/store/gamificationStore";
+import { useFocusEffect, useRouter } from "expo-router";
+import { useCallback, useEffect, useState } from "react";
 import {
+  Modal,
+  Pressable,
   ScrollView,
   Text,
   TouchableOpacity,
@@ -37,10 +41,14 @@ export default function HomeScreen() {
   const { profile, isLoading: authLoading, user } = useAuthStore();
   const { books, isLoading: booksLoading, fetchBooks } = useBookStore();
   const { categories } = useFilterStore();
+  const checkTrophies = useGamificationStore((s) => s.checkTrophies);
+  const fetchTrophies = useGamificationStore((s) => s.fetchTrophies);
 
   const [search, setSearch] = useState("");
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [pendingTrophy, setPendingTrophy] = useState<any>(null);
   const [selectedFiltroLectura, setSelectedFiltroLectura] =
     useState<string | null>("all");
 
@@ -53,10 +61,26 @@ export default function HomeScreen() {
     });
   }, [fetchBooks, search, selectedCategories, selectedTag, user?.id]);
 
-  if (!authLoading && !user) {
-    router.replace("/");
-    return null;
-  }
+  useFocusEffect(
+    useCallback(() => {
+      if (!user?.id) return;
+      let mounted = true;
+      (async () => {
+        const newTrophies = await checkTrophies(user.id);
+        if (newTrophies.length > 0) {
+          await fetchTrophies(user.id);
+          if (mounted) setPendingTrophy(newTrophies[0]);
+        }
+      })();
+      return () => { mounted = false; };
+    }, [user?.id, checkTrophies, fetchTrophies]),
+  );
+
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.replace("/");
+    }
+  }, [authLoading, user]);
 
   const loading = authLoading || booksLoading;
   const booksToRender = books.filter((book) => {
@@ -64,24 +88,25 @@ export default function HomeScreen() {
     return book.status === selectedFiltroLectura;
   });
 
+  if (pendingTrophy) {
+    return (
+      <TrophyUnlockedScreen
+        trophy={pendingTrophy}
+        onContinue={() => setPendingTrophy(null)}
+      />
+    );
+  }
+
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: "#F7FAFC" }}>
       <ScrollView contentContainerStyle={{ padding: 16 }}>
         <SearchInput
           value={search}
           onChangeText={setSearch}
-          onFilterPress={() => console.log("abrir filtros")}
+          onFilterPress={() => setFilterOpen(true)}
         />
 
         <TagsTabs selected={selectedTag} onSelect={setSelectedTag} />
-
-        {/* Categorias */}
-        <ChipSelector
-          multiselect={true}
-          chips={categories}
-          selected={selectedCategories}
-          onSelect={setSelectedCategories}
-        />
 
         {/* Filtro de lectura */}
         <ChipSelector
@@ -208,6 +233,85 @@ export default function HomeScreen() {
       {loading && (
         <HomeLoading />
       )}
+
+      <Modal visible={filterOpen} transparent animationType="fade">
+        <Pressable
+          style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.35)", justifyContent: "center", alignItems: "center" }}
+          onPress={() => setFilterOpen(false)}
+        >
+          <Pressable
+            style={{
+              backgroundColor: "#fff",
+              borderRadius: 16,
+              padding: 20,
+              width: "80%",
+              maxHeight: "70%",
+            }}
+            onPress={() => {}}
+          >
+            <Text style={{ fontSize: 17, fontWeight: "700", textAlign: "center", marginBottom: 16 }}>
+              Categorías
+            </Text>
+            <ScrollView style={{ maxHeight: 300 }}>
+              {categories.map((cat) => {
+                const checked = selectedCategories.includes(cat.id);
+                return (
+                  <TouchableOpacity
+                    key={cat.id}
+                    onPress={() =>
+                      setSelectedCategories((prev) =>
+                        prev.includes(cat.id)
+                          ? prev.filter((c) => c !== cat.id)
+                          : [...prev, cat.id],
+                      )
+                    }
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      paddingVertical: 12,
+                      paddingHorizontal: 8,
+                      borderRadius: 10,
+                      marginBottom: 4,
+                      backgroundColor: checked ? "#E8F5F3" : "transparent",
+                    }}
+                  >
+                    <View
+                      style={{
+                        width: 22,
+                        height: 22,
+                        borderRadius: 6,
+                        borderWidth: 2,
+                        borderColor: checked ? "#078F83" : "#CBD5E1",
+                        backgroundColor: checked ? "#078F83" : "transparent",
+                        justifyContent: "center",
+                        alignItems: "center",
+                        marginRight: 12,
+                      }}
+                    >
+                      {checked && <Text style={{ color: "#fff", fontSize: 13, fontWeight: "700" }}>✓</Text>}
+                    </View>
+                    <Text style={{ fontSize: 15, color: "#1C1C1E", fontWeight: checked ? "600" : "400" }}>
+                      {cat.name}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+            <TouchableOpacity
+              onPress={() => setFilterOpen(false)}
+              style={{
+                marginTop: 16,
+                backgroundColor: "#078F83",
+                paddingVertical: 12,
+                borderRadius: 10,
+                alignItems: "center",
+              }}
+            >
+              <Text style={{ color: "#fff", fontWeight: "700" }}>Aplicar</Text>
+            </TouchableOpacity>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </SafeAreaView>
   );
 }

@@ -1,4 +1,5 @@
 import { useProfileBootstrap } from "@/src/hooks/useProfileBootstrap";
+import { TrophyUnlockedScreen } from "@/src/screens/TrophyUnlockedScreen";
 import { useAuthStore } from "@/src/store/authStore";
 import { useGamificationStore } from "@/src/store/gamificationStore";
 import { useReadingStore } from "@/src/store/readingStore";
@@ -6,7 +7,7 @@ import { ActivityIndicator, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function Profile() {
-  const { loading } = useProfileBootstrap();
+  const { loading, newTrophy, clearNewTrophy } = useProfileBootstrap();
   const { profile, xpEvents } = useAuthStore();
   const { userBooks, sessions } = useReadingStore();
   const { userTrophies } = useGamificationStore();
@@ -17,6 +18,15 @@ export default function Profile() {
   const booksReading = userBooks.filter((b) => b.status === "reading").length;
   const totalMinutes = sessions.reduce((acc, s) => acc + s.minutes, 0);
   const totalPages = sessions.reduce((acc, s) => acc + s.pages, 0);
+
+  if (newTrophy) {
+    return (
+      <TrophyUnlockedScreen
+        trophy={newTrophy}
+        onContinue={clearNewTrophy}
+      />
+    );
+  }
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: "#F7FAFC" }}>

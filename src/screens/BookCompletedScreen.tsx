@@ -90,7 +90,7 @@ export function BookCompletedScreen({
       >
         {/* Trofeo + título */}
         <View style={{ alignItems: "center", gap: 8 }}>
-          <Text style={{ fontSize: 64 }}>🏆</Text>
+          <Text style={{ fontSize: 64 }}>📖</Text>
           <Text style={{ color: "#A5B4FC", fontSize: 13 }}>Completaste</Text>
           <Text
             style={{

@@ -7,6 +7,7 @@ import { useReadingStore } from "../store/readingStore";
 export function useProfileBootstrap() {
   const userId = useAuthStore((state) => state.user?.id);
   const [loading, setLoading] = useState(false);
+  const [newTrophy, setNewTrophy] = useState<any>(null);
 
   useFocusEffect(
     useCallback(() => {
@@ -17,13 +18,18 @@ export function useProfileBootstrap() {
       const run = async () => {
         setLoading(true);
         try {
+          const newTrophies = await useGamificationStore.getState().checkTrophies(userId);
+
           await Promise.all([
-            useReadingStore.getState().fetchUserBooks(userId),
-            useReadingStore.getState().fetchSessions(userId),
-            useAuthStore.getState().fetchXpEvents(userId),
+            useReadingStore.getState().fetchUserBooks(userId).catch(() => {}),
+            useReadingStore.getState().fetchSessions(userId).catch(() => {}),
+            useAuthStore.getState().fetchXpEvents(userId).catch(() => {}),
+            useGamificationStore.getState().fetchTrophies(userId).catch(() => {}),
           ]);
 
-          await useGamificationStore.getState().fetchTrophies(userId);
+          if (active && newTrophies.length > 0) {
+            setNewTrophy(newTrophies[0]);
+          }
         } finally {
           if (active) setLoading(false);
         }
@@ -37,5 +43,5 @@ export function useProfileBootstrap() {
     }, [userId]),
   );
 
-  return { loading };
+  return { loading, newTrophy, clearNewTrophy: () => setNewTrophy(null) };
 }

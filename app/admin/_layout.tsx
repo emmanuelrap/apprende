@@ -1,9 +1,15 @@
 import { BottomNav } from "@/src/components/BottomNavs";
-import { Slot } from "expo-router";
+import { useAuthStore } from "@/src/store/authStore";
+import { Redirect, Slot } from "expo-router";
 import { View } from "react-native";
 import "../../global.css";
 
 export default function Layout() {
+  const user = useAuthStore((s) => s.user);
+  const isAdmin = user?.email === "emmanuelzzz123@gmail.com";
+
+  if (!isAdmin) return <Redirect href="/home" />;
+
   return (
     <View style={{ flex: 1 }}>
       <View style={{ flex: 1 }}>

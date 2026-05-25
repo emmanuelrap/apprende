@@ -3,11 +3,13 @@ import { InterleavedReader } from "@/src/components/InterleavedReader";
 import { SingleReader } from "@/src/components/SingleReader";
 import { ReadingBar } from "@/src/components/ReadingBar";
 import { BookCompletedScreen } from "@/src/screens/BookCompletedScreen";
+import { TrophyUnlockedScreen } from "@/src/screens/TrophyUnlockedScreen";
 import { useAuthStore } from "@/src/store/authStore";
-import { usePrefsStore } from "@/src/store/prefsStore";
 import { useGamificationStore } from "@/src/store/gamificationStore";
+import { usePrefsStore } from "@/src/store/prefsStore";
 import { useReadingStore } from "@/src/store/readingStore";
 import { THEME_COLORS } from "@/src/theme";
+import { Audio } from "expo-av";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
@@ -23,6 +25,8 @@ type Page = {
   pageNumber: number;
   contentEs: string;
   contentEn: string;
+  audioEs: string | null;
+  audioEn: string | null;
 };
 
 type Language = "es" | "en";
@@ -54,12 +58,48 @@ export default function ReaderScreen() {
   const [bookTitle, setBookTitle] = useState("");
   const [xpBefore, setXpBefore] = useState(0);
   const [completed, setCompleted] = useState(false);
+  const [pendingTrophy, setPendingTrophy] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [langTop, setLangTop] = useState<Language>("en");
   const [langBottom, setLangBottom] = useState<Language>("es");
   const [activeParagraph, setActiveParagraph] = useState<number | null>(null);
   const toggleParagraph = (index: number | null) =>
     setActiveParagraph((prev) => (prev === index ? null : index));
+
+  const [playing, setPlaying] = useState(false);
+  const soundRef = useRef<Audio.Sound | null>(null);
+
+  const playAudio = async () => {
+    const url = langTop === "en" ? page?.audioEn : page?.audioEs;
+    if (!url) return;
+
+    if (soundRef.current) {
+      const status = await soundRef.current.getStatusAsync();
+      if (status.isLoaded && status.isPlaying) {
+        await soundRef.current.stopAsync();
+        setPlaying(false);
+        return;
+      }
+    }
+
+    try {
+      const { sound } = await Audio.Sound.createAsync({ uri: url });
+      soundRef.current = sound;
+      setPlaying(true);
+      sound.setOnPlaybackStatusUpdate((status) => {
+        if (status.isLoaded && !status.isPlaying) setPlaying(false);
+      });
+      await sound.playAsync();
+    } catch {
+      setPlaying(false);
+    }
+  };
+
+  useEffect(() => {
+    return () => {
+      soundRef.current?.unloadAsync();
+    };
+  }, []);
 
   const startTimeRef = useRef(Date.now());
   const pagesReadRef = useRef(0);
@@ -146,6 +186,11 @@ export default function ReaderScreen() {
     prefetchNext(currentPage);
   }, [currentPage]);
 
+  useEffect(() => {
+    soundRef.current?.stopAsync();
+    setPlaying(false);
+  }, [currentPage]);
+
   const nextPage = () => {
     if (currentPage < totalPages) {
       setCurrentPage((prev) => prev + 1);
@@ -169,7 +214,8 @@ export default function ReaderScreen() {
       pagesReadRef.current,
     );
 
-    await checkTrophies(user.id);
+    const newTrophies = await checkTrophies(user.id);
+
     await Promise.all([
       fetchTrophies(user.id),
       fetchUserBooks(user.id),
@@ -177,11 +223,27 @@ export default function ReaderScreen() {
       fetchXpEvents(user.id),
     ]);
 
-    setCompleted(true);
+    if (newTrophies.length > 0) {
+      setPendingTrophy(newTrophies[0]);
+    } else {
+      setCompleted(true);
+    }
   };
 
   const getContent = (lang: Language) =>
     lang === "es" ? page?.contentEs : page?.contentEn;
+
+  if (pendingTrophy) {
+    return (
+      <TrophyUnlockedScreen
+        trophy={pendingTrophy}
+        onContinue={() => {
+          setPendingTrophy(null);
+          setCompleted(true);
+        }}
+      />
+    );
+  }
 
   if (completed) {
     return (
@@ -263,6 +325,7 @@ export default function ReaderScreen() {
           paddingTop: 10,
           flexDirection: "row",
           justifyContent: "space-between",
+          alignItems: "center",
           borderTopWidth: 1,
           borderColor: theme === "dark" ? "#333" : "#ddd",
           backgroundColor: colors.bg,
@@ -271,9 +334,21 @@ export default function ReaderScreen() {
         <TouchableOpacity onPress={prevPage}>
           <Text style={{ color: colors.text }}>⬅️ Anterior</Text>
         </TouchableOpacity>
-        <Text style={{ color: colors.text }}>
-          {currentPage} / {totalPages}
-        </Text>
+        <TouchableOpacity
+          onPress={playAudio}
+          style={{
+            width: 44,
+            height: 44,
+            borderRadius: 22,
+            backgroundColor: (langTop === "en" ? page?.audioEn : page?.audioEs) ? "#078F83" : "#CBD5E1",
+            justifyContent: "center",
+            alignItems: "center",
+          }}
+        >
+          <Text style={{ fontSize: 18, color: "#fff" }}>
+            {playing ? "⏸" : "▶️"}
+          </Text>
+        </TouchableOpacity>
         <TouchableOpacity onPress={nextPage}>
           <Text style={{ color: colors.text }}>
             ➡️ {currentPage === totalPages ? "Terminar" : "Siguiente"}

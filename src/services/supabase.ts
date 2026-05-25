@@ -19,7 +19,7 @@ const supabaseFetch: typeof fetch = async (input, init) => {
   try {
     const response = await fetch(input, init);
 
-    if (!response.ok) {
+    if (!response.ok && response.status !== 409) {
       console.error("[Supabase HTTP Error]", {
         status: response.status,
         statusText: response.statusText,

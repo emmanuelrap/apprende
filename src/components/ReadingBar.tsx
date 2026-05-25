@@ -171,42 +171,6 @@ export function ReadingBar({
         </TouchableOpacity>
       </View>
 
-      {/* Fila 2: selectores de idioma + modo */}
-      <View
-        style={{
-          flexDirection: "row",
-          justifyContent: "center",
-          alignItems: "center",
-          gap: 16,
-          paddingBottom: 6,
-        }}
-      >
-        <LangDropdown value={langTop} onChange={onLangTopChange} label="" />
-
-        <TouchableOpacity
-          onPress={() => {
-            const next = { dual: "interleaved", interleaved: "single", single: "dual" } as const;
-            onReaderModeChange(next[readerMode]);
-          }}
-          style={{
-            paddingHorizontal: 10,
-            paddingVertical: 5,
-            borderRadius: 6,
-            backgroundColor: "#E2E8F0",
-          }}
-        >
-          <Text style={{ fontSize: 12, fontWeight: "600" }}>
-            {readerMode === "dual" ? "☗ Dual" : readerMode === "interleaved" ? "⇄ Alternado" : "◉ 1 idioma"}
-          </Text>
-        </TouchableOpacity>
-
-        <LangDropdown
-          value={langBottom}
-          onChange={onLangBottomChange}
-          label=""
-        />
-      </View>
-
       <View style={{ height: 3, backgroundColor: "#E2E8F0" }}>
         <View
           style={{
@@ -321,6 +285,33 @@ export function ReadingBar({
                 >
                   <Text style={{ fontSize: 14 }}>A+</Text>
                 </TouchableOpacity>
+              </View>
+            </View>
+
+            {/* Idioma y modo */}
+            <View>
+              <Text style={{ fontSize: 15, fontWeight: "700", marginBottom: 12, textAlign: "center" }}>
+                Idioma y modo de lectura
+              </Text>
+              <View style={{ flexDirection: "row", justifyContent: "center", alignItems: "center", gap: 12 }}>
+                <LangDropdown value={langTop} onChange={onLangTopChange} label="Sup" />
+                <TouchableOpacity
+                  onPress={() => {
+                    const next = { dual: "interleaved", interleaved: "single", single: "dual" } as const;
+                    onReaderModeChange(next[readerMode]);
+                  }}
+                  style={{
+                    paddingHorizontal: 12,
+                    paddingVertical: 6,
+                    borderRadius: 8,
+                    backgroundColor: "#E2E8F0",
+                  }}
+                >
+                  <Text style={{ fontSize: 12, fontWeight: "600" }}>
+                    {readerMode === "dual" ? "☗ Dual" : readerMode === "interleaved" ? "⇄ Alternado" : "◉ 1 idioma"}
+                  </Text>
+                </TouchableOpacity>
+                <LangDropdown value={langBottom} onChange={onLangBottomChange} label="Inf" />
               </View>
             </View>
           </View>

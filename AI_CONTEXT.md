@@ -92,6 +92,7 @@ Contenido por idioma
 * language (text → 'es', 'en')
 * content (text)
 * UNIQUE(page_id, language)
+* audio_url (text, nullable)
 
 ---
 

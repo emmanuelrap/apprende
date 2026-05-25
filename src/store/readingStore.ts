@@ -65,6 +65,8 @@ type ReadingStore = {
     pageNumber: number;
     contentEs: string;
     contentEn: string;
+    audioEs: string | null;
+    audioEn: string | null;
   } | null>;
   reset: () => void;
 };
@@ -217,7 +219,7 @@ export const useReadingStore = create<ReadingStore>((set) => ({
   getPage: async (bookId, pageNumber) => {
     const { data, error } = await supabase
       .from("book_pages")
-      .select(`id, page_number, page_content (content, language)`)
+      .select(`id, page_number, page_content (content, language, audio_url)`)
       .eq("book_id", bookId)
       .eq("page_number", pageNumber)
       .single();
@@ -228,11 +230,16 @@ export const useReadingStore = create<ReadingStore>((set) => ({
       (data.page_content as any[])?.find((c) => c.language === lang)?.content ??
       "";
 
+    const getAudio = (lang: string) =>
+      (data.page_content as any[])?.find((c) => c.language === lang)?.audio_url ?? null;
+
     return {
       id: data.id,
       pageNumber: data.page_number,
       contentEs: getContent("es"),
       contentEn: getContent("en"),
+      audioEs: getAudio("es"),
+      audioEn: getAudio("en"),
     };
   },
 

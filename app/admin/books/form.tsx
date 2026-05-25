@@ -50,8 +50,8 @@ export default function AdminBookForm() {
   const [pages, setPages] = useState([
     {
       contents: [
-        { language: "es", content: "" },
-        { language: "en", content: "" },
+        { language: "es", content: "", audio_url: "" },
+        { language: "en", content: "", audio_url: "" },
       ],
     },
   ]);
@@ -97,7 +97,7 @@ export default function AdminBookForm() {
       // cargar páginas
       const { data: pagesData } = await supabase
         .from("book_pages")
-        .select(`id, page_number, page_content (language, content)`)
+        .select(`id, page_number, page_content (language, content, audio_url)`)
         .eq("book_id", id)
         .order("page_number", { ascending: true });
 
@@ -134,8 +134,8 @@ export default function AdminBookForm() {
       ...pages,
       {
         contents: [
-          { language: "es", content: "" },
-          { language: "en", content: "" },
+          { language: "es", content: "", audio_url: "" },
+          { language: "en", content: "", audio_url: "" },
         ],
       },
     ]);
@@ -147,7 +147,7 @@ export default function AdminBookForm() {
       (c) => c.language === lang,
     );
     if (exists) return;
-    newPages[pageIndex].contents.push({ language: lang, content: "" });
+    newPages[pageIndex].contents.push({ language: lang, content: "", audio_url: "" });
     setPages(newPages);
   };
 
@@ -155,6 +155,13 @@ export default function AdminBookForm() {
     const newPages = [...pages];
     const item = newPages[pageIndex].contents.find((c) => c.language === lang);
     if (item) item.content = value;
+    setPages(newPages);
+  };
+
+  const updateAudioUrl = (pageIndex: number, lang: string, value: string) => {
+    const newPages = [...pages];
+    const item = newPages[pageIndex].contents.find((c) => c.language === lang);
+    if (item) item.audio_url = value;
     setPages(newPages);
   };
 
@@ -252,6 +259,7 @@ export default function AdminBookForm() {
             page_id: pageData.id,
             language: c.language,
             content: c.content,
+            audio_url: c.audio_url || null,
           }));
 
         if (contents.length > 0) {
@@ -479,6 +487,12 @@ export default function AdminBookForm() {
                 placeholder="Contenido..."
                 onChangeText={(v) => updateContent(index, c.language, v)}
                 style={[input, { minHeight: 80 }]}
+              />
+              <TextInput
+                value={c.audio_url}
+                placeholder="URL del audio (opcional)"
+                onChangeText={(v) => updateAudioUrl(index, c.language, v)}
+                style={[input, { marginTop: -6 }]}
               />
             </View>
           ))}

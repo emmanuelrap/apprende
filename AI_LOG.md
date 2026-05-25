@@ -24,20 +24,17 @@ Decisiones:
 - Se implementó registro con:
   supabase.auth.signUp(email, password)
 
-- Se agregó creación manual de profile:
-  insert en tabla profiles con:
-  id = auth.users.id
-  name = nombre
+- Profile se crea automáticamente vía trigger DB (handle_new_user)
+  No hay INSERT manual desde frontend.
 
 Problemas:
 
 - AsyncStorage error → solucionado instalando @react-native-async-storage/async-storage
-- Profile no se creaba → posible RLS bloqueando
 
 Decisiones:
 
 - No usar Google Auth por ahora
-- Crear profile desde frontend
+- Profile creation delegado al trigger DB, no al frontend
 
 Pendiente:
 
@@ -92,7 +89,6 @@ Decisiones:
 
 ## ⚠️ Problemas conocidos
 
-- RLS puede bloquear inserts en profiles
 - Confirmación de email puede hacer user null
 - AsyncStorage necesario en React Native
 
@@ -111,7 +107,7 @@ Decisiones:
 ## 🧩 Notas rápidas
 
 - user_id SIEMPRE = auth.users.id
-- profiles no se crean automáticamente
+- profiles se crean automáticamente vía trigger DB
 - usar async/await siempre
 
 ---
@@ -127,27 +123,10 @@ Decisiones:
 
 ## Auth - Profiles RLS
 
-- Se detecto que el error al guardar profiles viene de RLS en Supabase.
-- Para crear profile desde frontend se requiere policy INSERT con auth.uid() = id.
-- Se mantiene display_name/name en auth metadata durante signUp.
-
-SQL necesario:
-
-```sql
-alter table public.profiles enable row level security;
-
-create policy "profiles_insert_own"
-on public.profiles
-for insert
-to authenticated
-with check ((select auth.uid()) = id);
-
-create policy "profiles_select_own"
-on public.profiles
-for select
-to authenticated
-using ((select auth.uid()) = id);
-```
+- Se configuro RLS con policy SELECT para que usuario solo vea su propio profile.
+- No se usa policy INSERT desde frontend porque el profile lo crea el trigger DB (handle_new_user).
+- El trigger se ejecuta con permisos de owner, evitando RLS.
+- Se mantiene name en auth metadata durante signUp para que el trigger lo use.
 
 ---
 
@@ -162,14 +141,14 @@ using ((select auth.uid()) = id);
 
 - Se agrego modo Ingresar en la pantalla de auth.
 - Login usa supabase.auth.signInWithPassword con email/password.
-- La navegacion a Home depende de la sesion escuchada en App.tsx.
+- La navegacion a Home depende de la sesion manejada por Expo Router en app/(app)/_layout.tsx.
 
 ---
 
 ## AuthScreen
 
 - Se renombro RegisterScreen a AuthScreen.
-- App.tsx ahora monta Auth cuando no hay sesion.
+- Expo Router maneja el ruteo: app/(auth)/ cuando no hay sesion, app/(app)/ cuando hay sesion.
 
 ---
 
@@ -194,6 +173,15 @@ using ((select auth.uid()) = id);
 
 - Se alineo la carga de perfil con el modelo de BD: ahora se trae user_books, reading_sessions, xp_events y trofeos al entrar a perfil.
 - Se agrego fetchUserBooks en useInitApp para que stats de completados/leyendo no queden vacios.
-- Se creo hook useProfileBootstrap con recarga en focus de pantalla: fetchUserBooks, fetchSessions, fetchXpEvents, checkTrophies y fetchTrophies.
+- Se creo hook useProfileBootstrap con recarga en focus de pantalla: fetchUserBooks, fetchSessions, fetchXpEvents y fetchTrophies.
+- checkTrophies se ejecuta en useInitApp, no en useProfileBootstrap.
 - Se conecto useProfileBootstrap en profile.tsx con indicador de carga ligero para evitar UI incompleta mientras sincroniza.
 - Validacion: tsc y lint sin errores.
+
+---
+
+## 🎧 Audio por página
+
+- Se agrego columna audio_url a page_content.
+- Cada página/idioma tendrá su propio archivo de audio.
+- Se descarto tabla page_paragraphs por simplicidad.

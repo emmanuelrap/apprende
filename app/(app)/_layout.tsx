@@ -1,3 +1,4 @@
+import { AppLoading } from "@/src/components/AppLoading";
 import { BottomNav } from "@/src/components/BottomNavs";
 import { TopBar } from "@/src/components/TopBar";
 import { useInitApp } from "@/src/hooks/useInitApp";
@@ -5,7 +6,9 @@ import { useAuthStore } from "@/src/store/authStore";
 import { usePrefsStore } from "@/src/store/prefsStore";
 
 import { Slot, useRouter } from "expo-router";
-import { ActivityIndicator, View } from "react-native";
+import { useEffect } from "react";
+import { View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import "../../global.css";
 
 export default function Layout() {
@@ -17,30 +20,19 @@ export default function Layout() {
   const nativeLang = usePrefsStore((s) => s.nativeLanguage);
   const hasPrefs = nativeLang != null;
 
-  // Mientras carga auth, mostrar spinner
-  if (isLoading) {
-    return (
-      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-        <ActivityIndicator />
-      </View>
-    );
-  }
+  useEffect(() => {
+    if (isLoading || !user) return;
+    if (!hasPrefs) {
+      router.replace("/language-setup");
+    }
+  }, [user, hasPrefs, isLoading]);
 
-  // Sin usuario → redirect a auth
-  if (!user) {
-    router.replace("/");
-    return null;
-  }
+  if (isLoading) return <AppLoading />;
 
-  // Sin prefs de idioma → redirect a language setup
-  if (!hasPrefs) {
-    router.replace("/language-setup");
-    return null;
-  }
+  if (!user) return null;
 
-  // Todo listo → mostrar inicio
   return (
-    <View style={{ flex: 1 }}>
+    <SafeAreaView edges={["top"]} style={{ flex: 1 }}>
       <View style={{ zIndex: 2000, elevation: 2000 }}>
         <TopBar name={user.user_metadata?.name ?? "Usuario"} />
       </View>
@@ -50,6 +42,6 @@ export default function Layout() {
       </View>
 
       <BottomNav />
-    </View>
+    </SafeAreaView>
   );
 }

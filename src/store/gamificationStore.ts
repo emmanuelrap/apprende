@@ -29,7 +29,7 @@ type GamificationStore = {
 
   fetchTrophies: (userId: string) => Promise<void>;
   fetchLevels: () => Promise<void>;
-  checkTrophies: (userId: string) => Promise<void>;
+  checkTrophies: (userId: string) => Promise<Trophy[]>;
   computeLevel: (xp: number) => void;
   reset: () => void;
 };
@@ -72,6 +72,7 @@ export const useGamificationStore = create<GamificationStore>((set, get) => ({
   },
 
   checkTrophies: async (userId) => {
+    const newTrophies: Trophy[] = [];
     const { data: profile, error: profileError } = await supabase
       .from("profiles")
       .select("xp")
@@ -79,7 +80,7 @@ export const useGamificationStore = create<GamificationStore>((set, get) => ({
       .single();
     if (profileError) {
       console.error("[Trophies] Error loading profile xp:", profileError);
-      return;
+      return newTrophies;
     }
 
     const userXp = profile?.xp ?? 0;
@@ -90,7 +91,7 @@ export const useGamificationStore = create<GamificationStore>((set, get) => ({
       .eq("user_id", userId);
     if (userBooksError) {
       console.error("[Trophies] Error loading user_books:", userBooksError);
-      return;
+      return newTrophies;
     }
 
     const booksCompleted =
@@ -101,7 +102,7 @@ export const useGamificationStore = create<GamificationStore>((set, get) => ({
       .select("*");
     if (allTrophiesError) {
       console.error("[Trophies] Error loading trophies:", allTrophiesError);
-      return;
+      return newTrophies;
     }
 
     const { data: earned, error: earnedError } = await supabase
@@ -110,7 +111,7 @@ export const useGamificationStore = create<GamificationStore>((set, get) => ({
       .eq("user_id", userId);
     if (earnedError) {
       console.error("[Trophies] Error loading earned trophies:", earnedError);
-      return;
+      return newTrophies;
     }
 
     const earnedIds = new Set(earned?.map((e) => e.trophy_id));
@@ -131,54 +132,38 @@ export const useGamificationStore = create<GamificationStore>((set, get) => ({
       )
         conditionMet = booksCompleted >= trophy.condition_value;
 
-      if (!conditionMet) {
-        console.log("[Trophies] Condition not met:", {
+      if (!conditionMet) continue;
+
+      const { error: insertUserTrophyError } = await supabase
+        .from("user_trophies")
+        .insert({ user_id: userId, trophy_id: trophy.id });
+
+      if (insertUserTrophyError) {
+        if (insertUserTrophyError.code === "23505") continue;
+        console.error("[Trophies] Error inserting user_trophies:", {
           trophyId: trophy.id,
-          conditionType,
-          conditionValue: trophy.condition_value,
-          userXp,
-          booksCompleted,
+          error: insertUserTrophyError,
+        });
+        continue;
+      }
+
+      const { error: xpEventError } = await supabase.from("xp_events").insert({
+        user_id: userId,
+        amount: trophy.xp_reward,
+        source: "trophy",
+      });
+
+      if (xpEventError) {
+        console.error("[Trophies] Error inserting xp event for trophy:", {
+          trophyId: trophy.id,
+          error: xpEventError,
         });
       }
 
-      if (conditionMet) {
-        const { error: insertUserTrophyError } = await supabase
-          .from("user_trophies")
-          .insert({ user_id: userId, trophy_id: trophy.id });
-
-        if (insertUserTrophyError) {
-          console.error("[Trophies] Error inserting user_trophies:", {
-            trophyId: trophy.id,
-            error: insertUserTrophyError,
-          });
-          continue;
-        }
-
-        const { error: xpEventError } = await supabase.from("xp_events").insert({
-          user_id: userId,
-          amount: trophy.xp_reward,
-          source: "trophy",
-        });
-
-        if (xpEventError) {
-          console.error("[Trophies] Error inserting xp event for trophy:", {
-            trophyId: trophy.id,
-            error: xpEventError,
-          });
-        }
-
-        console.log("[Trophy Unlocked]", {
-          id: trophy.id,
-          name: trophy.name,
-          description: trophy.description,
-          rarity: trophy.rarity,
-          icon: trophy.icon,
-          xp_reward: trophy.xp_reward,
-          condition_type: trophy.condition_type,
-          condition_value: trophy.condition_value,
-        });
-      }
+      newTrophies.push(trophy);
     }
+
+    return newTrophies;
   },
 
   reset: () =>
