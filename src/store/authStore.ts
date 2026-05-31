@@ -10,6 +10,7 @@ type Profile = {
   name: string;
   avatar_url: string | null;
   xp: number;
+  level: number;
 };
 
 type XpEvent = {
@@ -54,7 +55,7 @@ export const useAuthStore = create<AuthStore>((set) => ({
 
       const { data: profileData, error: profileError } = await supabase
         .from("profiles")
-        .select("name, avatar_url, xp")
+        .select("name, avatar_url, xp, level")
         .eq("id", user.id)
         .single();
 

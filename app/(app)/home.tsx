@@ -133,6 +133,7 @@ export default function HomeScreen() {
   }, [authLoading, user]);
 
   const loading = authLoading || booksLoading;
+  const userLevel = profile?.level ?? 1;
   const booksToRender = books.filter((book) => {
     if (!selectedFiltroLectura || selectedFiltroLectura === "all") return true;
     return book.status === selectedFiltroLectura;
@@ -157,7 +158,7 @@ export default function HomeScreen() {
       >
         {/* Profile card */}
         <View style={{ paddingHorizontal: 16 }}>
-          <ProfileCard name={profile?.name ?? "-"} xp={profile?.xp ?? 0} />
+          <ProfileCard name={profile?.name ?? "-"} xp={profile?.xp ?? 0} level={profile?.level ?? 1} />
         </View>
 
         {/* Search + filter */}
@@ -192,13 +193,20 @@ export default function HomeScreen() {
               {readingBooks.length > 0 && selectedFiltroLectura === "all" && (
                 <View style={{ marginBottom: 8 }}>
                   <SectionHeader title="Continue leyendo" count={readingBooks.length} />
-                  {readingBooks.map((book) => (
-                    <BookCard
-                      key={book.id}
-                      book={book}
-                      onPress={() => router.push(`/reader/${book.id}`)}
-                    />
-                  ))}
+                  {readingBooks.map((book) => {
+                    const locked = book.minLevel != null && userLevel < book.minLevel;
+                    return (
+                      <BookCard
+                        key={book.id}
+                        book={book}
+                        userLevel={userLevel}
+                        onPress={() => {
+                          if (locked) return;
+                          router.push(`/reader/${book.id}`);
+                        }}
+                      />
+                    );
+                  })}
                 </View>
               )}
 
@@ -212,13 +220,20 @@ export default function HomeScreen() {
                   }
                   count={booksToRender.length}
                 />
-                {(selectedFiltroLectura !== "all" ? booksToRender : otherBooks).map((book) => (
-                  <BookCard
-                    key={book.id}
-                    book={book}
-                    onPress={() => router.push(`/reader/${book.id}`)}
-                  />
-                ))}
+                {(selectedFiltroLectura !== "all" ? booksToRender : otherBooks).map((book) => {
+                  const locked = book.minLevel != null && userLevel < book.minLevel;
+                  return (
+                    <BookCard
+                      key={book.id}
+                      book={book}
+                      userLevel={userLevel}
+                      onPress={() => {
+                        if (locked) return;
+                        router.push(`/reader/${book.id}`);
+                      }}
+                    />
+                  );
+                })}
               </View>
             </>
           )}

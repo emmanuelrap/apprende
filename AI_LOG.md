@@ -185,3 +185,14 @@ Decisiones:
 - Se agrego columna audio_url a page_content.
 - Cada página/idioma tendrá su propio archivo de audio.
 - Se descarto tabla page_paragraphs por simplicidad.
+
+---
+
+## 🔒 Bloqueo de libros por nivel
+
+- Se agregó columna `min_level` (int, nullable) a `books` en Supabase.
+- Si `min_level` está seteado (ej: 3), solo usuarios con nivel ≥ 3 pueden leer el libro.
+- Admin form: nuevo selector de nivel mínimo requerido al crear/editar libro.
+- BookCard: muestra badge "🔒 Necesitas nivel N+" si el usuario no cumple.
+- BookCard: se atenúa visualmente y el `onPress` no navega si está bloqueado.
+- El nivel del usuario se calcula con la misma función `getLevel(xp)` de ProfileCard (umbrales: 0/500/1000/2000/3000/5000 XP).

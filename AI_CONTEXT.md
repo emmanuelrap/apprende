@@ -52,6 +52,7 @@ Usuario de la app
 * name (text)
 * avatar_url (text)
 * xp (int, default 0)
+* level (int, NOT NULL default 1 — se actualiza automáticamente vía trigger al cambiar xp, consultando la tabla levels)
 * created_at (timestamp)
 
 ---
@@ -68,6 +69,7 @@ Libros disponibles
 * difficulty (int → 1 A1, 2 A2, 3 B1, 4 B2, 5 C1, 6 C2)
 * estimated_minutes (int)
 * xp_base (int, default 10)
+* min_level (int, nullable — nivel mínimo del usuario requerido para leer el libro)
 * created_at (timestamp)
 
 ---
@@ -179,23 +181,32 @@ Relación libros ↔ tags
 
 ---
 
-## 🔁 TRIGGER (AUTO PROFILE)
+## 🏆 levels
 
-Función:
+Niveles de usuario y sus umbrales de XP
 
-* handle_new_user()
+* level (int, PK)
+* xp_required (int)
+* title (text)
 
-Comportamiento:
+---
 
-* Se ejecuta al crear usuario en auth.users
-* Inserta automáticamente en profiles:
+## 🔁 TRIGGERS
 
-  * id = auth.users.id
-  * name = user_metadata.name o 'User'
+### handle_new_user()
 
-Trigger:
+Creación automática de profile:
 
 * after insert on auth.users
+* Inserta: id = auth.users.id, name = user_metadata.name o 'User'
+
+### update_profile_level()
+
+Actualiza `profiles.level` automáticamente al cambiar `xp`:
+
+* before insert or update of xp on profiles
+* Calcula: SELECT COALESCE(MAX(level), 1) FROM levels WHERE xp_required <= NEW.xp
+* Asigna el resultado a NEW.level
 
 ---
 

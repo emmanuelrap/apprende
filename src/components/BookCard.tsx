@@ -9,6 +9,7 @@ type Book = {
   author: string | null;
   difficulty: number;
   xp: number;
+  minLevel: number | null;
   estimatedMinutes: number | null;
   totalPages: number | null;
   categories: BookCategory[];
@@ -94,18 +95,21 @@ function CoverPlaceholder({
 export function BookCard({
   book,
   onPress,
+  userLevel,
 }: {
   book: Book;
   onPress: () => void;
+  userLevel?: number;
 }) {
   const statusCfg = STATUS_CONFIG[book.status];
+  const locked = userLevel != null && book.minLevel != null && userLevel < book.minLevel;
 
   return (
     <TouchableOpacity
-      onPress={onPress}
-      activeOpacity={0.85}
+      onPress={locked ? undefined : onPress}
+      activeOpacity={locked ? 1 : 0.85}
       style={{
-        backgroundColor: "#FFFFFF",
+        backgroundColor: locked ? "#F8FAFC" : "#FFFFFF",
         borderRadius: 20,
         padding: 14,
         marginBottom: 12,
@@ -116,6 +120,7 @@ export function BookCard({
         shadowRadius: 10,
         shadowOffset: { width: 0, height: 2 },
         elevation: 2,
+        opacity: locked ? 0.65 : 1,
       }}
     >
       <CoverPlaceholder title={book.title} difficulty={book.difficulty} />
@@ -209,8 +214,29 @@ export function BookCard({
           </Text>
         </View>
 
+        {/* Locked badge */}
+        {locked && (
+          <View
+            style={{
+              backgroundColor: "#FEF2F2",
+              borderRadius: 6,
+              paddingHorizontal: 8,
+              paddingVertical: 4,
+              alignSelf: "flex-start",
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 4,
+            }}
+          >
+            <Text style={{ fontSize: 12 }}>🔒</Text>
+            <Text style={{ fontSize: 11, color: "#DC2626", fontWeight: "600" }}>
+              Necesitas nivel {book.minLevel}+
+            </Text>
+          </View>
+        )}
+
         {/* Progress bar */}
-        {book.status !== "new" && (
+        {book.status !== "new" && !locked && (
           <View style={{ marginTop: 2 }}>
             <View
               style={{

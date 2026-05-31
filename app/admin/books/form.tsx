@@ -43,6 +43,7 @@ export default function AdminBookForm() {
     author: "",
     cover_url: "",
     difficulty: 1,
+    min_level: "",
     estimated_minutes: "",
     xp_base: "10",
   });
@@ -75,6 +76,7 @@ export default function AdminBookForm() {
           author: data.author || "",
           cover_url: data.cover_url || "",
           difficulty: data.difficulty || 1,
+          min_level: data.min_level?.toString() || "",
           estimated_minutes: data.estimated_minutes?.toString() || "",
           xp_base: data.xp_base?.toString() || "10",
         });
@@ -192,6 +194,7 @@ export default function AdminBookForm() {
             author: form.author,
             cover_url: form.cover_url,
             difficulty: form.difficulty,
+            min_level: form.min_level ? parseInt(form.min_level) : null,
             estimated_minutes: parseInt(form.estimated_minutes) || 0,
             xp_base: parseInt(form.xp_base) || 10,
             total_pages: pages.length,
@@ -211,6 +214,7 @@ export default function AdminBookForm() {
             author: form.author,
             cover_url: form.cover_url,
             difficulty: form.difficulty,
+            min_level: form.min_level ? parseInt(form.min_level) : null,
             estimated_minutes: parseInt(form.estimated_minutes) || 0,
             xp_base: parseInt(form.xp_base) || 10,
             total_pages: pages.length,
@@ -371,6 +375,55 @@ export default function AdminBookForm() {
               style={{ color: form.difficulty === lvl.value ? "#FFF" : "#000" }}
             >
               {lvl.label}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+
+      {/* Nivel mínimo requerido */}
+      <Text style={{ marginBottom: 6 }}>Nivel mínimo requerido (opcional)</Text>
+      <View
+        style={{
+          flexDirection: "row",
+          flexWrap: "wrap",
+          gap: 8,
+          marginBottom: 16,
+        }}
+      >
+        <TouchableOpacity
+          onPress={() => setForm({ ...form, min_level: "" })}
+          style={{
+            padding: 10,
+            borderRadius: 8,
+            borderWidth: 1,
+            borderColor: !form.min_level ? "#078F83" : "#CBD5E1",
+            backgroundColor: !form.min_level ? "#078F83" : "#FFF",
+          }}
+        >
+          <Text style={{ color: !form.min_level ? "#FFF" : "#000" }}>
+            Sin restricción
+          </Text>
+        </TouchableOpacity>
+        {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => (
+          <TouchableOpacity
+            key={n}
+            onPress={() => setForm({ ...form, min_level: n.toString() })}
+            style={{
+              padding: 10,
+              borderRadius: 8,
+              borderWidth: 1,
+              borderColor:
+                form.min_level === n.toString() ? "#078F83" : "#CBD5E1",
+              backgroundColor:
+                form.min_level === n.toString() ? "#078F83" : "#FFF",
+            }}
+          >
+            <Text
+              style={{
+                color: form.min_level === n.toString() ? "#FFF" : "#000",
+              }}
+            >
+              Nv. {n}
             </Text>
           </TouchableOpacity>
         ))}

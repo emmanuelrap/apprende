@@ -398,7 +398,7 @@ export default function ProfileScreen() {
 
   const name = profile?.name ?? "—";
   const xp = profile?.xp ?? 0;
-  const { current: level } = getProgress(xp);
+  const userLevel = profile?.level ?? 1;
 
   if (loading) return null;
 
@@ -443,7 +443,7 @@ export default function ProfileScreen() {
           }}>
             <Text style={{ fontSize: 14 }}>📖</Text>
             <Text style={{ fontSize: 13, fontWeight: "700", color: TEAL }}>
-              Nivel: <Text style={{ fontWeight: "900" }}>{level.label} ({level.sub})</Text>
+              Nivel: <Text style={{ fontWeight: "900" }}>{userLevel}</Text>
             </Text>
           </View>
 

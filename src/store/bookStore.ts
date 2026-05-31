@@ -23,6 +23,7 @@ type Book = {
   cover: string | null;
   difficulty: number;
   xp: number;
+  minLevel: number | null;
   estimatedMinutes: number | null;
   totalPages: number | null;
   categories: BookCategory[];

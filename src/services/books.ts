@@ -19,6 +19,7 @@ type BookWithRelations = {
   xp_base: number | null;
   estimated_minutes: number | null;
   total_pages: number | null;
+  min_level: number | null;
   book_categories: { categories: BookCategory[] }[];
   book_tag_relations: { book_tags: BookTag[] }[];
   user_books: {
@@ -81,6 +82,7 @@ export async function getBooksWithProgress(
     xp_base,
     estimated_minutes,
     total_pages,
+    min_level,
     book_categories ( categories ( id, name, slug ) ),
     book_tag_relations ( book_tags ( id, name, slug ) ),
     user_books ( current_page, progress, status, started_at, completed_at )
@@ -110,6 +112,7 @@ export async function getBooksWithProgress(
       cover: book.cover_url,
       difficulty: book.difficulty,
       xp: (book.xp_base ?? 10) * (book.difficulty ?? 1),
+      minLevel: book.min_level,
       estimatedMinutes: book.estimated_minutes,
       totalPages: book.total_pages,
       categories: book.book_categories?.flatMap((bc) => bc.categories) ?? [],

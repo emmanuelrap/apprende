@@ -1,46 +1,47 @@
+import { supabase } from "@/src/services/supabase";
+import { useEffect, useState } from "react";
 import { Text, View } from "react-native";
 
 const TEAL = "#078F83";
 const TEAL_DARK = "#056860";
 
-function getLevel(xp: number) {
-  if (xp >= 5000) return { level: 10, label: "Políglota" };
-  if (xp >= 3000) return { level: 8, label: "Avanzado" };
-  if (xp >= 2000) return { level: 6, label: "Intermedio" };
-  if (xp >= 1000) return { level: 4, label: "Aprendiz" };
-  if (xp >= 500) return { level: 2, label: "Novato" };
-  return { level: 1, label: "Principiante" };
-}
-
-function getNextLevelXp(xp: number) {
-  const thresholds = [0, 500, 1000, 2000, 3000, 5000];
-  for (let i = 0; i < thresholds.length; i++) {
-    if (xp < thresholds[i]) return thresholds[i];
-  }
-  return thresholds[thresholds.length - 1];
-}
-
-function getPrevLevelXp(xp: number) {
-  const thresholds = [0, 500, 1000, 2000, 3000, 5000];
-  let prev = 0;
-  for (const t of thresholds) {
-    if (xp >= t) prev = t;
-    else break;
-  }
-  return prev;
-}
+type LevelRow = { level: number; xp_required: number; title: string };
 
 export function ProfileCard({
   name,
   xp,
+  level: currentLevel,
 }: {
   name: string;
   xp: number;
+  level: number;
 }) {
-  const { level, label } = getLevel(xp);
-  const nextXp = getNextLevelXp(xp);
-  const prevXp = getPrevLevelXp(xp);
-  const progress = nextXp > prevXp ? ((xp - prevXp) / (nextXp - prevXp)) * 100 : 100;
+  const [levels, setLevels] = useState<LevelRow[]>([]);
+
+  useEffect(() => {
+    supabase
+      .from("levels")
+      .select("level, xp_required, title")
+      .order("level")
+      .then(({ data }) => {
+        if (data) setLevels(data);
+      });
+  }, []);
+
+  const levelRow = levels.find((l) => l.level === currentLevel);
+  const nextRow = levelRow
+    ? levels.find((l) => l.level === currentLevel + 1)
+    : null;
+  const label = levelRow?.title ?? `Nivel ${currentLevel}`;
+  const progress =
+    levelRow && nextRow
+      ? Math.min(
+          ((xp - levelRow.xp_required) /
+            (nextRow.xp_required - levelRow.xp_required)) *
+            100,
+          100,
+        )
+      : 100;
 
   return (
     <View
@@ -89,7 +90,7 @@ export function ProfileCard({
                 }}
               >
                 <Text style={{ fontSize: 11, fontWeight: "700", color: TEAL }}>
-                  Nv. {level} · {label}
+                  Nv. {currentLevel} · {label}
                 </Text>
               </View>
             </View>
@@ -115,14 +116,14 @@ export function ProfileCard({
         </View>
 
         {/* Level progress bar */}
-        {xp < 5000 && (
+        {nextRow && (
           <View style={{ marginTop: 16 }}>
             <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 6 }}>
               <Text style={{ fontSize: 11, color: "#94A3B8", fontWeight: "500" }}>
                 Próximo nivel
               </Text>
               <Text style={{ fontSize: 11, color: "#94A3B8", fontWeight: "500" }}>
-                {xp - prevXp} / {nextXp - prevXp} XP
+                {xp - levelRow!.xp_required} / {nextRow.xp_required - levelRow!.xp_required} XP
               </Text>
             </View>
             <View
@@ -146,7 +147,7 @@ export function ProfileCard({
         )}
 
         {/* Max level badge */}
-        {xp >= 5000 && (
+        {!nextRow && levels.length > 0 && (
           <View style={{ marginTop: 12, alignItems: "center" }}>
             <View style={{ backgroundColor: "#F0FDF4", borderRadius: 20, paddingHorizontal: 16, paddingVertical: 6 }}>
               <Text style={{ fontSize: 12, fontWeight: "700", color: "#16A34A" }}>
@@ -164,7 +165,7 @@ export function ProfileCard({
           </View>
           <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
             <Text style={{ fontSize: 14 }}>📚</Text>
-            <Text style={{ fontSize: 12, color: "#64748B" }}>Nivel: <Text style={{ fontWeight: "700", color: TEAL }}>{level}</Text></Text>
+            <Text style={{ fontSize: 12, color: "#64748B" }}>Nivel: <Text style={{ fontWeight: "700", color: TEAL }}>{currentLevel}</Text></Text>
           </View>
         </View>
       </View>
