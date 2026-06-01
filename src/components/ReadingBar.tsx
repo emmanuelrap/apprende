@@ -1,7 +1,7 @@
 import { THEME_COLORS } from "@/src/theme";
 import { useRouter } from "expo-router";
 import { useState } from "react";
-import { Modal, Pressable, Text, TouchableOpacity, View } from "react-native";
+import { Modal, Pressable, ScrollView, Text, TouchableOpacity, View } from "react-native";
 
 const LANGUAGES = [
   { label: "English", value: "en" },
@@ -9,6 +9,16 @@ const LANGUAGES = [
 ];
 
 const FONT_SIZES = [14, 16, 18, 20, 22, 24];
+
+const LINE_SPACINGS = [6, 10, 14, 18, 22];
+
+const SIDE_MARGINS = [8, 16, 24, 32];
+
+const FONTS = [
+  { label: "Default", value: undefined },
+  { label: "Serif", value: "serif" },
+  { label: "Mono", value: "monospace" },
+];
 
 type Theme = "light" | "sepia" | "dark";
 
@@ -32,6 +42,14 @@ type Props = {
   onThemeChange: (theme: Theme) => void;
   readerMode: "dual" | "interleaved" | "single";
   onReaderModeChange: (mode: "dual" | "interleaved" | "single") => void;
+  boldEnabled: boolean;
+  onBoldEnabledChange: (v: boolean) => void;
+  lineSpacing: number;
+  onLineSpacingChange: (v: number) => void;
+  sideMargin: number;
+  onSideMarginChange: (v: number) => void;
+  fontFamily: string | undefined;
+  onFontFamilyChange: (v: string | undefined) => void;
 };
 
 function LangDropdown({
@@ -133,6 +151,14 @@ export function ReadingBar({
   onThemeChange,
   readerMode,
   onReaderModeChange,
+  boldEnabled,
+  onBoldEnabledChange,
+  lineSpacing,
+  onLineSpacingChange,
+  sideMargin,
+  onSideMarginChange,
+  fontFamily,
+  onFontFamilyChange,
 }: Props) {
   const router = useRouter();
   const [openSettings, setOpenSettings] = useState(false);
@@ -191,130 +217,266 @@ export function ReadingBar({
           }}
           onPress={() => setOpenSettings(false)}
         >
-          <View
+          <Pressable
             style={{
               backgroundColor: "#fff",
               borderRadius: 14,
               padding: 24,
               minWidth: 260,
+              maxHeight: "90%",
               shadowOpacity: 0.15,
               shadowRadius: 12,
               elevation: 20,
-              gap: 20,
             }}
+            onPress={() => {}}
           >
-            {/* Tema */}
-            <View>
-              <Text style={{ fontSize: 15, fontWeight: "700", marginBottom: 12, textAlign: "center" }}>
-                Tema
-              </Text>
-              <View style={{ flexDirection: "row", gap: 8, justifyContent: "center" }}>
-                {THEMES.map((t) => (
+            <ScrollView style={{ gap: 20 }}>
+              {/* Tema */}
+              <View style={{ marginBottom: 20 }}>
+                <Text style={{ fontSize: 15, fontWeight: "700", marginBottom: 12, textAlign: "center" }}>
+                  Tema
+                </Text>
+                <View style={{ flexDirection: "row", gap: 8, justifyContent: "center" }}>
+                  {THEMES.map((t) => (
+                    <TouchableOpacity
+                      key={t.key}
+                      onPress={() => onThemeChange(t.key)}
+                      style={{
+                        flex: 1,
+                        paddingVertical: 12,
+                        borderRadius: 10,
+                        alignItems: "center",
+                        borderWidth: 2,
+                        borderColor: theme === t.key ? "#1A7A6E" : "#E5E7EB",
+                        backgroundColor: theme === t.key ? "#E8F5F3" : "#fff",
+                      }}
+                    >
+                      <Text style={{ fontSize: 20 }}>{t.emoji}</Text>
+                      <Text style={{ fontSize: 12, fontWeight: "600", marginTop: 4 }}>{t.label}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+
+              {/* Tamaño de letra */}
+              <View style={{ marginBottom: 20 }}>
+                <Text style={{ fontSize: 15, fontWeight: "700", marginBottom: 12, textAlign: "center" }}>
+                  Tamaño de letra
+                </Text>
+
+                <View style={{ flexDirection: "row", gap: 8, justifyContent: "center", alignItems: "center" }}>
                   <TouchableOpacity
-                    key={t.key}
-                    onPress={() => onThemeChange(t.key)}
+                    onPress={() => onFontSizeChange(Math.max(12, fontSize - 2))}
+                    style={{
+                      paddingHorizontal: 14,
+                      paddingVertical: 10,
+                      borderRadius: 8,
+                      backgroundColor: "#E2E8F0",
+                    }}
+                  >
+                    <Text style={{ fontSize: 14 }}>A−</Text>
+                  </TouchableOpacity>
+
+                  {FONT_SIZES.map((size) => (
+                    <TouchableOpacity
+                      key={size}
+                      onPress={() => onFontSizeChange(size)}
+                      style={{
+                        width: 34,
+                        height: 34,
+                        borderRadius: 8,
+                        backgroundColor: fontSize === size ? "#1A7A6E" : "#E2E8F0",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                    >
+                      <Text
+                        style={{
+                          fontSize: 12,
+                          fontWeight: "600",
+                          color: fontSize === size ? "#fff" : "#1C1C1E",
+                        }}
+                      >
+                        {size}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+
+                  <TouchableOpacity
+                    onPress={() => onFontSizeChange(Math.min(28, fontSize + 2))}
+                    style={{
+                      paddingHorizontal: 14,
+                      paddingVertical: 10,
+                      borderRadius: 8,
+                      backgroundColor: "#E2E8F0",
+                    }}
+                  >
+                    <Text style={{ fontSize: 14 }}>A+</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+
+              {/* Negritas */}
+              <View style={{ marginBottom: 20 }}>
+                <Text style={{ fontSize: 15, fontWeight: "700", marginBottom: 12, textAlign: "center" }}>
+                  Estilo de texto
+                </Text>
+                <View style={{ flexDirection: "row", gap: 8, justifyContent: "center" }}>
+                  <TouchableOpacity
+                    onPress={() => onBoldEnabledChange(false)}
                     style={{
                       flex: 1,
                       paddingVertical: 12,
                       borderRadius: 10,
                       alignItems: "center",
                       borderWidth: 2,
-                      borderColor: theme === t.key ? "#1A7A6E" : "#E5E7EB",
-                      backgroundColor: theme === t.key ? "#E8F5F3" : "#fff",
+                      borderColor: !boldEnabled ? "#1A7A6E" : "#E5E7EB",
+                      backgroundColor: !boldEnabled ? "#E8F5F3" : "#fff",
                     }}
                   >
-                    <Text style={{ fontSize: 20 }}>{t.emoji}</Text>
-                    <Text style={{ fontSize: 12, fontWeight: "600", marginTop: 4 }}>{t.label}</Text>
+                    <Text style={{ fontSize: 15, fontWeight: "400" }}>Normal</Text>
                   </TouchableOpacity>
-                ))}
-              </View>
-            </View>
-
-            {/* Tamaño de letra */}
-            <View>
-              <Text style={{ fontSize: 15, fontWeight: "700", marginBottom: 12, textAlign: "center" }}>
-                Tamaño de letra
-              </Text>
-
-              <View style={{ flexDirection: "row", gap: 8, justifyContent: "center", alignItems: "center" }}>
-                <TouchableOpacity
-                  onPress={() => onFontSizeChange(Math.max(12, fontSize - 2))}
-                  style={{
-                    paddingHorizontal: 14,
-                    paddingVertical: 10,
-                    borderRadius: 8,
-                    backgroundColor: "#E2E8F0",
-                  }}
-                >
-                  <Text style={{ fontSize: 14 }}>A−</Text>
-                </TouchableOpacity>
-
-                {FONT_SIZES.map((size) => (
                   <TouchableOpacity
-                    key={size}
-                    onPress={() => onFontSizeChange(size)}
+                    onPress={() => onBoldEnabledChange(true)}
                     style={{
-                      width: 34,
-                      height: 34,
-                      borderRadius: 8,
-                      backgroundColor: fontSize === size ? "#1A7A6E" : "#E2E8F0",
+                      flex: 1,
+                      paddingVertical: 12,
+                      borderRadius: 10,
                       alignItems: "center",
-                      justifyContent: "center",
+                      borderWidth: 2,
+                      borderColor: boldEnabled ? "#1A7A6E" : "#E5E7EB",
+                      backgroundColor: boldEnabled ? "#E8F5F3" : "#fff",
                     }}
                   >
-                    <Text
+                    <Text style={{ fontSize: 15, fontWeight: "700" }}>Negrita</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+
+              {/* Interlineado */}
+              <View style={{ marginBottom: 20 }}>
+                <Text style={{ fontSize: 15, fontWeight: "700", marginBottom: 12, textAlign: "center" }}>
+                  Interlineado
+                </Text>
+                <View style={{ flexDirection: "row", gap: 8, justifyContent: "center" }}>
+                  {LINE_SPACINGS.map((sp) => (
+                    <TouchableOpacity
+                      key={sp}
+                      onPress={() => onLineSpacingChange(sp)}
                       style={{
-                        fontSize: 12,
-                        fontWeight: "600",
-                        color: fontSize === size ? "#fff" : "#1C1C1E",
+                        paddingVertical: 10,
+                        paddingHorizontal: 14,
+                        borderRadius: 8,
+                        backgroundColor: lineSpacing === sp ? "#1A7A6E" : "#E2E8F0",
                       }}
                     >
-                      {size}
+                      <Text
+                        style={{
+                          fontSize: 12,
+                          fontWeight: "600",
+                          color: lineSpacing === sp ? "#fff" : "#1C1C1E",
+                        }}
+                      >
+                        {sp}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+
+              {/* Margen lateral */}
+              <View style={{ marginBottom: 20 }}>
+                <Text style={{ fontSize: 15, fontWeight: "700", marginBottom: 12, textAlign: "center" }}>
+                  Margen lateral
+                </Text>
+                <View style={{ flexDirection: "row", gap: 8, justifyContent: "center" }}>
+                  {SIDE_MARGINS.map((m) => (
+                    <TouchableOpacity
+                      key={m}
+                      onPress={() => onSideMarginChange(m)}
+                      style={{
+                        paddingVertical: 10,
+                        paddingHorizontal: 14,
+                        borderRadius: 8,
+                        backgroundColor: sideMargin === m ? "#1A7A6E" : "#E2E8F0",
+                      }}
+                    >
+                      <Text
+                        style={{
+                          fontSize: 12,
+                          fontWeight: "600",
+                          color: sideMargin === m ? "#fff" : "#1C1C1E",
+                        }}
+                      >
+                        {m}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+
+              {/* Fuente */}
+              <View style={{ marginBottom: 20 }}>
+                <Text style={{ fontSize: 15, fontWeight: "700", marginBottom: 12, textAlign: "center" }}>
+                  Fuente
+                </Text>
+                <View style={{ flexDirection: "row", gap: 8, justifyContent: "center" }}>
+                  {FONTS.map((f) => (
+                    <TouchableOpacity
+                      key={f.label}
+                      onPress={() => onFontFamilyChange(f.value)}
+                      style={{
+                        flex: 1,
+                        paddingVertical: 12,
+                        borderRadius: 10,
+                        alignItems: "center",
+                        borderWidth: 2,
+                        borderColor: fontFamily === f.value ? "#1A7A6E" : "#E5E7EB",
+                        backgroundColor: fontFamily === f.value ? "#E8F5F3" : "#fff",
+                      }}
+                    >
+                      <Text
+                        style={{
+                          fontSize: 13,
+                          fontWeight: "600",
+                          fontFamily: f.value ?? undefined,
+                        }}
+                      >
+                        {f.label}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+
+              {/* Idioma y modo */}
+              <View>
+                <Text style={{ fontSize: 15, fontWeight: "700", marginBottom: 12, textAlign: "center" }}>
+                  Idioma y modo de lectura
+                </Text>
+                <View style={{ flexDirection: "row", justifyContent: "center", alignItems: "center", gap: 12 }}>
+                  <LangDropdown value={langTop} onChange={onLangTopChange} label="Sup" />
+                  <TouchableOpacity
+                    onPress={() => {
+                      const next = { dual: "interleaved", interleaved: "single", single: "dual" } as const;
+                      onReaderModeChange(next[readerMode]);
+                    }}
+                    style={{
+                      paddingHorizontal: 12,
+                      paddingVertical: 6,
+                      borderRadius: 8,
+                      backgroundColor: "#E2E8F0",
+                    }}
+                  >
+                    <Text style={{ fontSize: 12, fontWeight: "600" }}>
+                      {readerMode === "dual" ? "☗ Dual" : readerMode === "interleaved" ? "⇄ Alternado" : "◉ 1 idioma"}
                     </Text>
                   </TouchableOpacity>
-                ))}
-
-                <TouchableOpacity
-                  onPress={() => onFontSizeChange(Math.min(28, fontSize + 2))}
-                  style={{
-                    paddingHorizontal: 14,
-                    paddingVertical: 10,
-                    borderRadius: 8,
-                    backgroundColor: "#E2E8F0",
-                  }}
-                >
-                  <Text style={{ fontSize: 14 }}>A+</Text>
-                </TouchableOpacity>
+                  <LangDropdown value={langBottom} onChange={onLangBottomChange} label="Inf" />
+                </View>
               </View>
-            </View>
-
-            {/* Idioma y modo */}
-            <View>
-              <Text style={{ fontSize: 15, fontWeight: "700", marginBottom: 12, textAlign: "center" }}>
-                Idioma y modo de lectura
-              </Text>
-              <View style={{ flexDirection: "row", justifyContent: "center", alignItems: "center", gap: 12 }}>
-                <LangDropdown value={langTop} onChange={onLangTopChange} label="Sup" />
-                <TouchableOpacity
-                  onPress={() => {
-                    const next = { dual: "interleaved", interleaved: "single", single: "dual" } as const;
-                    onReaderModeChange(next[readerMode]);
-                  }}
-                  style={{
-                    paddingHorizontal: 12,
-                    paddingVertical: 6,
-                    borderRadius: 8,
-                    backgroundColor: "#E2E8F0",
-                  }}
-                >
-                  <Text style={{ fontSize: 12, fontWeight: "600" }}>
-                    {readerMode === "dual" ? "☗ Dual" : readerMode === "interleaved" ? "⇄ Alternado" : "◉ 1 idioma"}
-                  </Text>
-                </TouchableOpacity>
-                <LangDropdown value={langBottom} onChange={onLangBottomChange} label="Inf" />
-              </View>
-            </View>
-          </View>
+            </ScrollView>
+          </Pressable>
         </Pressable>
       </Modal>
     </View>

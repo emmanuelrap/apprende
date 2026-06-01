@@ -20,6 +20,7 @@ type Book = {
   id: string;
   title: string;
   author: string | null;
+  description: string | null;
   cover: string | null;
   difficulty: number;
   xp: number;

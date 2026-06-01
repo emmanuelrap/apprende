@@ -42,6 +42,7 @@ export default function AdminBookForm() {
     title: "",
     author: "",
     cover_url: "",
+    description: "",
     difficulty: 1,
     min_level: "",
     estimated_minutes: "",
@@ -75,6 +76,7 @@ export default function AdminBookForm() {
           title: data.title || "",
           author: data.author || "",
           cover_url: data.cover_url || "",
+          description: data.description || "",
           difficulty: data.difficulty || 1,
           min_level: data.min_level?.toString() || "",
           estimated_minutes: data.estimated_minutes?.toString() || "",
@@ -149,7 +151,11 @@ export default function AdminBookForm() {
       (c) => c.language === lang,
     );
     if (exists) return;
-    newPages[pageIndex].contents.push({ language: lang, content: "", audio_url: "" });
+    newPages[pageIndex].contents.push({
+      language: lang,
+      content: "",
+      audio_url: "",
+    });
     setPages(newPages);
   };
 
@@ -213,6 +219,7 @@ export default function AdminBookForm() {
             title: form.title,
             author: form.author,
             cover_url: form.cover_url,
+            description: form.description,
             difficulty: form.difficulty,
             min_level: form.min_level ? parseInt(form.min_level) : null,
             estimated_minutes: parseInt(form.estimated_minutes) || 0,
@@ -289,12 +296,6 @@ export default function AdminBookForm() {
   // =====================
   return (
     <ScrollView style={{ padding: 16 }}>
-      <View className="mb-4 rounded-xl bg-emerald-500 p-3">
-        <Text className="font-bold text-white">
-          Prueba Tailwind activa (admin/books/form)
-        </Text>
-      </View>
-
       <Text style={{ fontSize: 20, fontWeight: "700", marginBottom: 16 }}>
         {isEdit ? "Editar libro" : "Nuevo libro"}
       </Text>
@@ -316,11 +317,28 @@ export default function AdminBookForm() {
       />
 
       <Text>URL portada</Text>
+
       <TextInput
         placeholder="https://..."
         value={form.cover_url}
         onChangeText={(v) => setForm({ ...form, cover_url: v })}
         style={input}
+      />
+      {form.cover_url && (
+        <img
+          src={form.cover_url}
+          alt="Portada"
+          style={{ width: 100, height: 150, marginBottom: 8 }}
+        />
+      )}
+
+      <Text>Descripción</Text>
+      <TextInput
+        placeholder="Breve descripción del libro..."
+        value={form.description}
+        onChangeText={(v) => setForm({ ...form, description: v })}
+        style={[input, { minHeight: 80, textAlignVertical: "top" }]}
+        multiline
       />
 
       {/* Minutos y XP */}

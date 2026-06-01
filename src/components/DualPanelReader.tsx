@@ -16,6 +16,10 @@ type Props = {
   onParagraphPress: (index: number | null) => void;
   fontSize: number;
   theme: Theme;
+  boldEnabled: boolean;
+  lineSpacing: number;
+  sideMargin: number;
+  fontFamily: string | undefined;
 };
 
 export function DualPanelReader({
@@ -29,6 +33,10 @@ export function DualPanelReader({
   onParagraphPress,
   fontSize,
   theme,
+  boldEnabled,
+  lineSpacing,
+  sideMargin,
+  fontFamily,
 }: Props) {
   const colors = THEME_COLORS[theme];
 
@@ -37,7 +45,8 @@ export function DualPanelReader({
       <View
         style={{
           flex: 1,
-          padding: 16,
+          paddingHorizontal: sideMargin,
+          paddingVertical: 16,
           borderBottomWidth: 1,
           borderColor: theme === "dark" ? "#333" : "#ddd",
           backgroundColor: colors.bg,
@@ -53,11 +62,14 @@ export function DualPanelReader({
             onParagraphPress={onParagraphPress}
             fontSize={fontSize}
             theme={theme}
+            boldEnabled={boldEnabled}
+            lineSpacing={lineSpacing}
+            fontFamily={fontFamily}
           />
         </ScrollView>
       </View>
 
-      <View style={{ flex: 1, padding: 16, backgroundColor: colors.bg }}>
+      <View style={{ flex: 1, paddingHorizontal: sideMargin, paddingVertical: 16, backgroundColor: colors.bg }}>
         <ScrollView>
           <PageContent
             content={contentBottom}
@@ -69,6 +81,9 @@ export function DualPanelReader({
             onParagraphPress={onParagraphPress}
             fontSize={fontSize}
             theme={theme}
+            boldEnabled={boldEnabled}
+            lineSpacing={lineSpacing}
+            fontFamily={fontFamily}
           />
         </ScrollView>
       </View>

@@ -17,6 +17,9 @@ type Props = {
   onParagraphPress: (index: number | null) => void;
   fontSize?: number;
   theme?: Theme;
+  boldEnabled: boolean;
+  lineSpacing: number;
+  fontFamily: string | undefined;
 };
 
 type SaveItem = {
@@ -35,6 +38,9 @@ export function PageContent({
   onParagraphPress,
   fontSize = 16,
   theme = "light",
+  boldEnabled,
+  lineSpacing,
+  fontFamily,
 }: Props) {
   const user = useAuthStore((state) => state.user);
   const addItem = useVocabularyStore((state) => state.addItem);
@@ -45,10 +51,9 @@ export function PageContent({
   const [saving, setSaving] = useState(false);
 
   const paragraphs = content
-    .split(".")
+    .split(/\n\s*\n/)
     .map((p) => p.trim())
-    .filter((p) => p.length > 0)
-    .map((p) => p + ".");
+    .filter((p) => p.length > 0);
 
   const openModal = (item: SaveItem) => {
     setSaveItem(item);
@@ -94,7 +99,7 @@ export function PageContent({
               activeOpacity={1}
               className="p-2 "
             >
-              <Text style={{ lineHeight: fontSize + 12, fontSize, color: THEME_COLORS[theme].text }}>
+              <Text style={{ lineHeight: fontSize + lineSpacing, fontSize, color: THEME_COLORS[theme].text, fontWeight: boldEnabled ? "bold" : "normal", fontFamily: fontFamily ?? undefined }}>
                 {words.map((word, wIndex) => (
                   <Text
                     key={wIndex}

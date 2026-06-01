@@ -98,7 +98,7 @@ export default function AdminBooks() {
 
         {/* 📚 Lista */}
         {books.map((book) => (
-          <View key={book.id}>
+          <View key={book.id} className="flex-row  justify-between">
             <TouchableOpacity
               onPress={() =>
                 router.push({
@@ -113,7 +113,9 @@ export default function AdminBooks() {
                 marginBottom: 10,
               }}
             >
-              <Text style={{ fontWeight: "600" }}>{book.title}</Text>
+              <Text style={{ fontWeight: "600" }} className="text-lg">
+                {book.title}
+              </Text>
               <Text style={{ color: "#64748B" }}>{book.author}</Text>
             </TouchableOpacity>
             <TouchableOpacity onPress={() => handleDeleteBook(book.id)}>

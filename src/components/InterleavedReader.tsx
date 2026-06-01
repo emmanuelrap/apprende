@@ -18,6 +18,10 @@ type Props = {
   onParagraphPress: (index: number | null) => void;
   fontSize: number;
   theme: Theme;
+  boldEnabled: boolean;
+  lineSpacing: number;
+  sideMargin: number;
+  fontFamily: string | undefined;
 };
 
 type SaveItem = {
@@ -37,6 +41,10 @@ export function InterleavedReader({
   onParagraphPress,
   fontSize,
   theme,
+  boldEnabled,
+  lineSpacing,
+  sideMargin,
+  fontFamily,
 }: Props) {
   const user = useAuthStore((state) => state.user);
   const addItem = useVocabularyStore((state) => state.addItem);
@@ -48,16 +56,14 @@ export function InterleavedReader({
   const [saving, setSaving] = useState(false);
 
   const topParagraphs = contentTop
-    .split(".")
+    .split(/\n\s*\n/)
     .map((p) => p.trim())
-    .filter((p) => p.length > 0)
-    .map((p) => p + ".");
+    .filter((p) => p.length > 0);
 
   const bottomParagraphs = contentBottom
-    .split(".")
+    .split(/\n\s*\n/)
     .map((p) => p.trim())
-    .filter((p) => p.length > 0)
-    .map((p) => p + ".");
+    .filter((p) => p.length > 0);
 
   const mixed: { text: string; lang: Language }[] = [];
   const maxLen = Math.max(topParagraphs.length, bottomParagraphs.length);
@@ -92,7 +98,7 @@ export function InterleavedReader({
 
   return (
     <>
-      <ScrollView style={{ flex: 1, padding: 16, backgroundColor: colors.bg }}>
+      <ScrollView style={{ flex: 1, paddingHorizontal: sideMargin, paddingVertical: 16, backgroundColor: colors.bg }}>
         {mixed.map((item, pIndex) => {
           const words = item.text.split(" ");
           const isActive = activeParagraph === pIndex;
@@ -114,10 +120,12 @@ export function InterleavedReader({
             >
               <Text
                 style={{
-                  lineHeight: fontSize + 12,
+                  lineHeight: fontSize + lineSpacing,
                   fontSize,
                   color: colors.text,
                   fontStyle: item.lang === langBottom ? "italic" : "normal",
+                  fontWeight: boldEnabled ? "bold" : "normal",
+                  fontFamily: fontFamily ?? undefined,
                 }}
               >
                 {words.map((word, wIndex) => (

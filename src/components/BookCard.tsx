@@ -1,4 +1,4 @@
-import { Text, TouchableOpacity, View } from "react-native";
+import { Image, Text, TouchableOpacity, View } from "react-native";
 
 type BookCategory = { id: string; name: string };
 type BookTag = { id: string; name: string };
@@ -7,6 +7,7 @@ type Book = {
   id: string;
   title: string;
   author: string | null;
+  cover: string | null;
   difficulty: number;
   xp: number;
   minLevel: number | null;
@@ -46,12 +47,24 @@ const COVER_COLORS = [
 function CoverPlaceholder({
   title,
   difficulty,
+  cover,
 }: {
   title: string;
   difficulty: number;
+  cover?: string | null;
 }) {
   const [top, bottom] = COVER_COLORS[difficulty % COVER_COLORS.length];
   const initial = title.charAt(0).toUpperCase();
+
+  if (cover) {
+    return (
+      <Image
+        source={{ uri: cover }}
+        style={{ width: 56, height: 80, borderRadius: 12 }}
+        resizeMode="cover"
+      />
+    );
+  }
 
   return (
     <View
@@ -64,7 +77,6 @@ function CoverPlaceholder({
         alignItems: "center",
       }}
     >
-      {/* Subtle overlay */}
       <View
         style={{
           position: "absolute",
@@ -123,7 +135,7 @@ export function BookCard({
         opacity: locked ? 0.65 : 1,
       }}
     >
-      <CoverPlaceholder title={book.title} difficulty={book.difficulty} />
+      <CoverPlaceholder title={book.title} difficulty={book.difficulty} cover={book.cover} />
 
       <View style={{ flex: 1, gap: 6 }}>
         <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" }}>

@@ -49,6 +49,10 @@ export default function ReaderScreen() {
   const fontSize = usePrefsStore((state) => state.appSettings.fontSize);
   const theme = usePrefsStore((state) => state.appSettings.theme);
   const readerMode = usePrefsStore((state) => state.appSettings.readerMode);
+  const boldEnabled = usePrefsStore((state) => state.appSettings.boldEnabled);
+  const lineSpacing = usePrefsStore((state) => state.appSettings.lineSpacing);
+  const sideMargin = usePrefsStore((state) => state.appSettings.sideMargin);
+  const fontFamily = usePrefsStore((state) => state.appSettings.fontFamily);
   const setAppSettings = usePrefsStore((state) => state.setAppSettings);
 
   const [page, setPage] = useState<Page | null>(null);
@@ -274,6 +278,14 @@ export default function ReaderScreen() {
         onThemeChange={(t) => setAppSettings({ theme: t })}
         readerMode={readerMode}
         onReaderModeChange={(m) => setAppSettings({ readerMode: m })}
+        boldEnabled={boldEnabled}
+        onBoldEnabledChange={(v) => setAppSettings({ boldEnabled: v })}
+        lineSpacing={lineSpacing}
+        onLineSpacingChange={(v) => setAppSettings({ lineSpacing: v })}
+        sideMargin={sideMargin}
+        onSideMarginChange={(v) => setAppSettings({ sideMargin: v })}
+        fontFamily={fontFamily}
+        onFontFamilyChange={(v) => setAppSettings({ fontFamily: v })}
       />
 
       {loading || !page ? (
@@ -290,6 +302,10 @@ export default function ReaderScreen() {
           onParagraphPress={toggleParagraph}
           fontSize={fontSize}
           theme={theme}
+          boldEnabled={boldEnabled}
+          lineSpacing={lineSpacing}
+          sideMargin={sideMargin}
+          fontFamily={fontFamily}
         />
       ) : readerMode === "interleaved" ? (
         <InterleavedReader
@@ -303,6 +319,10 @@ export default function ReaderScreen() {
           onParagraphPress={toggleParagraph}
           fontSize={fontSize}
           theme={theme}
+          boldEnabled={boldEnabled}
+          lineSpacing={lineSpacing}
+          sideMargin={sideMargin}
+          fontFamily={fontFamily}
         />
       ) : (
         <SingleReader
@@ -314,6 +334,10 @@ export default function ReaderScreen() {
           onParagraphPress={toggleParagraph}
           fontSize={fontSize}
           theme={theme}
+          boldEnabled={boldEnabled}
+          lineSpacing={lineSpacing}
+          sideMargin={sideMargin}
+          fontFamily={fontFamily}
         />
       )}
 

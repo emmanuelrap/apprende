@@ -202,7 +202,7 @@ export default function HomeScreen() {
                         userLevel={userLevel}
                         onPress={() => {
                           if (locked) return;
-                          router.push(`/reader/${book.id}`);
+                          router.push(`/book/${book.id}`);
                         }}
                       />
                     );
@@ -229,7 +229,7 @@ export default function HomeScreen() {
                       userLevel={userLevel}
                       onPress={() => {
                         if (locked) return;
-                        router.push(`/reader/${book.id}`);
+                                                  router.push(`/book/${book.id}`);
                       }}
                     />
                   );

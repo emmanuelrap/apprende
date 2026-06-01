@@ -14,6 +14,7 @@ type BookWithRelations = {
   id: string;
   title: string;
   author: string | null;
+  description: string | null;
   cover_url: string | null;
   difficulty: number;
   xp_base: number | null;
@@ -77,6 +78,7 @@ export async function getBooksWithProgress(
     id,
     title,
     author,
+    description,
     cover_url,
     difficulty,
     xp_base,
@@ -109,6 +111,7 @@ export async function getBooksWithProgress(
       id: book.id,
       title: book.title,
       author: book.author,
+      description: book.description,
       cover: book.cover_url,
       difficulty: book.difficulty,
       xp: (book.xp_base ?? 10) * (book.difficulty ?? 1),
