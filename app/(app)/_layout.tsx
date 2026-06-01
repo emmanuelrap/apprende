@@ -1,7 +1,5 @@
-import { AppLoading } from "@/src/components/AppLoading";
 import { BottomNav } from "@/src/components/BottomNavs";
 import { TopBar } from "@/src/components/TopBar";
-import { useInitApp } from "@/src/hooks/useInitApp";
 import { useAuthStore } from "@/src/store/authStore";
 import { usePrefsStore } from "@/src/store/prefsStore";
 
@@ -9,25 +7,19 @@ import { Slot, useRouter } from "expo-router";
 import { useEffect } from "react";
 import { View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import "../../global.css";
 
 export default function Layout() {
   const router = useRouter();
-  useInitApp();
-
   const user = useAuthStore((s) => s.user);
-  const isLoading = useAuthStore((s) => s.isLoading);
   const nativeLang = usePrefsStore((s) => s.nativeLanguage);
   const hasPrefs = nativeLang != null;
 
   useEffect(() => {
-    if (isLoading || !user) return;
+    if (!user) return;
     if (!hasPrefs) {
       router.replace("/language-setup");
     }
-  }, [user, hasPrefs, isLoading]);
-
-  if (isLoading) return <AppLoading />;
+  }, [user, hasPrefs]);
 
   if (!user) return null;
 

@@ -60,11 +60,11 @@ export const useAuthStore = create<AuthStore>((set) => ({
         .single();
 
       if (profileError) {
-        set({ user, profile: null });
+        set({ user, profile: null, isLoading: false });
         return;
       }
 
-      set({ user, profile: profileData });
+      set({ user, profile: profileData, isLoading: false });
     } catch {
       set({
         error: "Error al cargar autenticación",
