@@ -28,6 +28,7 @@ type AuthStore = {
   error: string | null;
 
   init: () => Promise<void>;
+  refreshProfile: (userId: string) => Promise<void>;
   logout: () => Promise<void>;
   clearMyData: () => Promise<void>;
   reset: () => void;
@@ -41,6 +42,15 @@ export const useAuthStore = create<AuthStore>((set) => ({
   xpEvents: [],
   isLoading: true,
   error: null,
+
+  refreshProfile: async (userId: string) => {
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("name, avatar_url, xp, level")
+      .eq("id", userId)
+      .single();
+    if (!error && data) set({ profile: data });
+  },
 
   init: async () => {
     set({ isLoading: true, error: null });

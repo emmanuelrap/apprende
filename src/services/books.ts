@@ -87,10 +87,10 @@ export async function getBooksWithProgress(
     min_level,
     book_categories ( categories ( id, name, slug ) ),
     book_tag_relations ( book_tags ( id, name, slug ) ),
-    user_books ( current_page, progress, status, started_at, completed_at )
+    user_books!left ( current_page, progress, status, started_at, completed_at )
   `,
     )
-    .eq("user_books.user_id", userId);
+    .filter("user_books.user_id", "eq", userId);
 
   if (filteredIds) {
     query = query.in("id", filteredIds);

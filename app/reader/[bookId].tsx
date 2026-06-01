@@ -10,6 +10,7 @@ import { usePrefsStore } from "@/src/store/prefsStore";
 import { useReadingStore } from "@/src/store/readingStore";
 import { THEME_COLORS } from "@/src/theme";
 import { Audio } from "expo-av";
+import * as Speech from "expo-speech";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
@@ -37,6 +38,7 @@ export default function ReaderScreen() {
 
   const user = useAuthStore((state) => state.user);
   const fetchXpEvents = useAuthStore((state) => state.fetchXpEvents);
+  const refreshProfile = useAuthStore((state) => state.refreshProfile);
   const checkTrophies = useGamificationStore((state) => state.checkTrophies);
   const fetchTrophies = useGamificationStore((state) => state.fetchTrophies);
   const fetchUserBooks = useReadingStore((state) => state.fetchUserBooks);
@@ -72,36 +74,59 @@ export default function ReaderScreen() {
 
   const [playing, setPlaying] = useState(false);
   const soundRef = useRef<Audio.Sound | null>(null);
+  const isTTS = useRef(false);
+  const navigatingRef = useRef(false);
 
-  const playAudio = async () => {
-    const url = langTop === "en" ? page?.audioEn : page?.audioEs;
-    if (!url) return;
-
+  const stopAll = useCallback(async () => {
     if (soundRef.current) {
       const status = await soundRef.current.getStatusAsync();
       if (status.isLoaded && status.isPlaying) {
         await soundRef.current.stopAsync();
-        setPlaying(false);
-        return;
       }
     }
+    Speech.stop();
+    setPlaying(false);
+  }, []);
 
-    try {
-      const { sound } = await Audio.Sound.createAsync({ uri: url });
-      soundRef.current = sound;
+  const playAudio = async () => {
+    const content = langTop === "en" ? page?.contentEn : page?.contentEs;
+    const url = langTop === "en" ? page?.audioEn : page?.audioEs;
+    if (!content) return;
+
+    if (playing) {
+      await stopAll();
+      return;
+    }
+
+    if (url) {
+      try {
+        isTTS.current = false;
+        const { sound } = await Audio.Sound.createAsync({ uri: url });
+        soundRef.current = sound;
+        setPlaying(true);
+        sound.setOnPlaybackStatusUpdate((status) => {
+          if (status.isLoaded && !status.isPlaying) setPlaying(false);
+        });
+        await sound.playAsync();
+      } catch {
+        setPlaying(false);
+      }
+    } else {
+      isTTS.current = true;
       setPlaying(true);
-      sound.setOnPlaybackStatusUpdate((status) => {
-        if (status.isLoaded && !status.isPlaying) setPlaying(false);
+      Speech.speak(content, {
+        language: langTop === "en" ? "en" : "es",
+        rate: 0.8,
+        onDone: () => setPlaying(false),
+        onError: () => setPlaying(false),
       });
-      await sound.playAsync();
-    } catch {
-      setPlaying(false);
     }
   };
 
   useEffect(() => {
     return () => {
       soundRef.current?.unloadAsync();
+      Speech.stop();
     };
   }, []);
 
@@ -191,20 +216,26 @@ export default function ReaderScreen() {
   }, [currentPage]);
 
   useEffect(() => {
-    soundRef.current?.stopAsync();
-    setPlaying(false);
+    stopAll();
   }, [currentPage]);
+
+  const goTo = (page: number) => {
+    if (navigatingRef.current) return;
+    navigatingRef.current = true;
+    setCurrentPage(page);
+    setTimeout(() => { navigatingRef.current = false; }, 1000);
+  };
 
   const nextPage = () => {
     if (currentPage < totalPages) {
-      setCurrentPage((prev) => prev + 1);
+      goTo(currentPage + 1);
     } else {
       handleFinish();
     }
   };
 
   const prevPage = () => {
-    if (currentPage > 1) setCurrentPage((prev) => prev - 1);
+    if (currentPage > 1) goTo(currentPage - 1);
   };
 
   const handleFinish = async () => {
@@ -225,6 +256,7 @@ export default function ReaderScreen() {
       fetchUserBooks(user.id),
       fetchSessions(user.id),
       fetchXpEvents(user.id),
+      refreshProfile(user.id),
     ]);
 
     if (newTrophies.length > 0) {
@@ -255,7 +287,7 @@ export default function ReaderScreen() {
         xpBefore={xpBefore}
         xpGained={bookXp}
         bookTitle={bookTitle}
-        onContinue={() => router.back()}
+        onContinue={() => router.push("/(app)/home")}
       />
     );
   }
@@ -364,7 +396,7 @@ export default function ReaderScreen() {
             width: 44,
             height: 44,
             borderRadius: 22,
-            backgroundColor: (langTop === "en" ? page?.audioEn : page?.audioEs) ? "#078F83" : "#CBD5E1",
+            backgroundColor: playing ? "#078F83" : "#CBD5E1",
             justifyContent: "center",
             alignItems: "center",
           }}

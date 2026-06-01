@@ -80,7 +80,14 @@ export function ProfileCard({
             <Text style={{ fontSize: 18, fontWeight: "700", color: "#0F172A" }}>
               ¡Hola, {name}!
             </Text>
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginTop: 4 }}>
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                gap: 8,
+                marginTop: 4,
+              }}
+            >
               <View
                 style={{
                   backgroundColor: "#E8F5F3",
@@ -109,7 +116,14 @@ export function ProfileCard({
             <Text style={{ fontSize: 20, fontWeight: "800", color: "#F59E0B" }}>
               {xp}
             </Text>
-            <Text style={{ fontSize: 9, fontWeight: "600", color: "#D97706", marginTop: -2 }}>
+            <Text
+              style={{
+                fontSize: 9,
+                fontWeight: "600",
+                color: "#D97706",
+                marginTop: -2,
+              }}
+            >
               XP
             </Text>
           </View>
@@ -118,12 +132,23 @@ export function ProfileCard({
         {/* Level progress bar */}
         {nextRow && (
           <View style={{ marginTop: 16 }}>
-            <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 6 }}>
-              <Text style={{ fontSize: 11, color: "#94A3B8", fontWeight: "500" }}>
+            <View
+              style={{
+                flexDirection: "row",
+                justifyContent: "space-between",
+                marginBottom: 6,
+              }}
+            >
+              <Text
+                style={{ fontSize: 11, color: "#94A3B8", fontWeight: "500" }}
+              >
                 Próximo nivel
               </Text>
-              <Text style={{ fontSize: 11, color: "#94A3B8", fontWeight: "500" }}>
-                {xp - levelRow!.xp_required} / {nextRow.xp_required - levelRow!.xp_required} XP
+              <Text
+                style={{ fontSize: 11, color: "#94A3B8", fontWeight: "500" }}
+              >
+                {xp - levelRow!.xp_required} /{" "}
+                {nextRow.xp_required - levelRow!.xp_required} XP
               </Text>
             </View>
             <View
@@ -149,25 +174,22 @@ export function ProfileCard({
         {/* Max level badge */}
         {!nextRow && levels.length > 0 && (
           <View style={{ marginTop: 12, alignItems: "center" }}>
-            <View style={{ backgroundColor: "#F0FDF4", borderRadius: 20, paddingHorizontal: 16, paddingVertical: 6 }}>
-              <Text style={{ fontSize: 12, fontWeight: "700", color: "#16A34A" }}>
+            <View
+              style={{
+                backgroundColor: "#F0FDF4",
+                borderRadius: 20,
+                paddingHorizontal: 16,
+                paddingVertical: 6,
+              }}
+            >
+              <Text
+                style={{ fontSize: 12, fontWeight: "700", color: "#16A34A" }}
+              >
                 🏆 ¡Nivel máximo alcanzado!
               </Text>
             </View>
           </View>
         )}
-
-        {/* Quick stats row */}
-        <View style={{ flexDirection: "row", marginTop: 16, paddingTop: 16, borderTopWidth: 1, borderTopColor: "#F1F5F9", gap: 20 }}>
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-            <Text style={{ fontSize: 14 }}>🔥</Text>
-            <Text style={{ fontSize: 12, color: "#64748B" }}>Racha: <Text style={{ fontWeight: "700", color: "#0F172A" }}>0</Text></Text>
-          </View>
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-            <Text style={{ fontSize: 14 }}>📚</Text>
-            <Text style={{ fontSize: 12, color: "#64748B" }}>Nivel: <Text style={{ fontWeight: "700", color: TEAL }}>{currentLevel}</Text></Text>
-          </View>
-        </View>
       </View>
     </View>
   );
