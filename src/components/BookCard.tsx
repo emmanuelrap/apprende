@@ -7,6 +7,7 @@ type Book = {
   id: string;
   title: string;
   author: string | null;
+  description: string | null;
   cover: string | null;
   difficulty: number;
   xp: number;
@@ -152,6 +153,14 @@ export function BookCard({
                 numberOfLines={1}
               >
                 {book.author}
+              </Text>
+            )}
+            {book.description && (
+              <Text
+                style={{ fontSize: 12, color: "#64748B", marginTop: 4, lineHeight: 16 }}
+                numberOfLines={2}
+              >
+                {book.description}
               </Text>
             )}
           </View>

@@ -6,6 +6,8 @@ import {
 import { useBookStore } from "@/src/store/bookStore";
 import { useRouter } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
+import { getFavorites, toggleFavorite } from "@/src/services/favorites";
+import { useAuthStore } from "@/src/store/authStore";
 import {
   ActivityIndicator,
   Image,
@@ -687,6 +689,24 @@ export function BookDetailScreen({ bookId }: Props) {
   const books = useBookStore((state) => state.books);
   const [activeTab, setActiveTab] = useState(0);
   const [isFav, setIsFav] = useState(false);
+  const user = useAuthStore((s) => s.user);
+
+  useEffect(() => {
+    if (user) {
+      getFavorites(user.id).then((ids) => setIsFav(ids.includes(bookId)));
+    }
+  }, [user, bookId]);
+
+  const handleFavToggle = async () => {
+    if (!user) return;
+    const optimistic = !isFav;
+    setIsFav(optimistic);
+    try {
+      await toggleFavorite(user.id, bookId);
+    } catch {
+      setIsFav(!optimistic);
+    }
+  };
 
   const book = books.find((b) => b.id === bookId);
 
@@ -765,7 +785,7 @@ export function BookDetailScreen({ bookId }: Props) {
           </TouchableOpacity>
           <View style={{ flexDirection: "row", gap: 8 }}>
             <TouchableOpacity
-              onPress={() => setIsFav(!isFav)}
+              onPress={handleFavToggle}
               style={{
                 width: 36,
                 height: 36,
