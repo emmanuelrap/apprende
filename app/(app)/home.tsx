@@ -14,6 +14,7 @@ import { useGamificationStore } from "@/src/store/gamificationStore";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Animated, RefreshControl, Text, View } from "react-native";
+// test para git
 
 const TEAL = "#078F83";
 
@@ -132,7 +133,8 @@ export default function HomeScreen() {
     try {
       await fetchBooks({
         tagId: selectedTag,
-        categoryIds: selectedCategories.length > 0 ? selectedCategories : undefined,
+        categoryIds:
+          selectedCategories.length > 0 ? selectedCategories : undefined,
         search,
       });
       const ids = await getFavorites(user.id);
@@ -195,19 +197,23 @@ export default function HomeScreen() {
 
   const spin = scrollY.interpolate({
     inputRange: [-100, 0],
-    outputRange: ['360deg', '0deg'],
-    extrapolate: 'clamp',
+    outputRange: ["360deg", "0deg"],
+    extrapolate: "clamp",
   });
   const pullOpacity = scrollY.interpolate({
     inputRange: [-100, -20, 0],
     outputRange: [1, 0.4, 0],
-    extrapolate: 'clamp',
+    extrapolate: "clamp",
   });
 
   return (
     <View style={{ flex: 1, backgroundColor: "#F7FAFC" }}>
       <Animated.ScrollView
-        contentContainerStyle={{ paddingHorizontal: 0, paddingTop: 12, paddingBottom: 32 }}
+        contentContainerStyle={{
+          paddingHorizontal: 0,
+          paddingTop: 12,
+          paddingBottom: 32,
+        }}
         showsVerticalScrollIndicator={false}
         bounces
         overScrollMode="always"
@@ -217,17 +223,29 @@ export default function HomeScreen() {
           { useNativeDriver: true },
         )}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#078F83" />
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor="#078F83"
+          />
         }
       >
         {/* Pull indicator */}
-        <View style={{ alignItems: 'center', height: 24, justifyContent: 'center', marginBottom: -24, overflow: 'visible' }}>
+        <View
+          style={{
+            alignItems: "center",
+            height: 24,
+            justifyContent: "center",
+            marginBottom: -24,
+            overflow: "visible",
+          }}
+        >
           <Animated.Text
             style={{
               fontSize: 20,
               transform: [{ rotate: spin }],
               opacity: pullOpacity,
-              color: '#078F83',
+              color: "#078F83",
             }}
           >
             ↻
@@ -286,12 +304,36 @@ export default function HomeScreen() {
         {/* Favorites slider */}
         {favoriteIds.size > 0 && (
           <View>
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 16, marginTop: 16 }}>
-              <View style={{ width: 3, height: 16, borderRadius: 2, backgroundColor: "#078F83" }} />
-              <Text style={{ fontSize: 17, fontWeight: "700", color: "#0F172A" }}>Mis favoritos</Text>
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                gap: 8,
+                paddingHorizontal: 16,
+                marginTop: 16,
+              }}
+            >
+              <View
+                style={{
+                  width: 3,
+                  height: 16,
+                  borderRadius: 2,
+                  backgroundColor: "#078F83",
+                }}
+              />
+              <Text
+                style={{ fontSize: 17, fontWeight: "700", color: "#0F172A" }}
+              >
+                Mis favoritos
+              </Text>
             </View>
             <BookSlider
-              books={favoriteBooks.map((b) => ({ id: b.id, title: b.title, cover: b.cover, difficulty: b.difficulty }))}
+              books={favoriteBooks.map((b) => ({
+                id: b.id,
+                title: b.title,
+                cover: b.cover,
+                difficulty: b.difficulty,
+              }))}
               favoriteIds={favoriteIds}
               userId={user?.id ?? ""}
               onToggleFavorite={toggleFav}
@@ -302,12 +344,36 @@ export default function HomeScreen() {
         {/* Continue reading slider */}
         {readingBooks.length > 0 && (
           <View>
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 16, marginTop: 16 }}>
-              <View style={{ width: 3, height: 16, borderRadius: 2, backgroundColor: "#078F83" }} />
-              <Text style={{ fontSize: 17, fontWeight: "700", color: "#0F172A" }}>Continue leyendo</Text>
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                gap: 8,
+                paddingHorizontal: 16,
+                marginTop: 16,
+              }}
+            >
+              <View
+                style={{
+                  width: 3,
+                  height: 16,
+                  borderRadius: 2,
+                  backgroundColor: "#078F83",
+                }}
+              />
+              <Text
+                style={{ fontSize: 17, fontWeight: "700", color: "#0F172A" }}
+              >
+                Continue leyendo
+              </Text>
             </View>
             <BookSlider
-              books={readingBooks.map((b) => ({ id: b.id, title: b.title, cover: b.cover, difficulty: b.difficulty }))}
+              books={readingBooks.map((b) => ({
+                id: b.id,
+                title: b.title,
+                cover: b.cover,
+                difficulty: b.difficulty,
+              }))}
               favoriteIds={favoriteIds}
               userId={user?.id ?? ""}
               onToggleFavorite={toggleFav}
