@@ -1,5 +1,5 @@
+import { AppBar } from "@/src/components/AppBar";
 import { BottomNav } from "@/src/components/BottomNavs";
-import { TopBar } from "@/src/components/TopBar";
 import { useAuthStore } from "@/src/store/authStore";
 import { usePrefsStore } from "@/src/store/prefsStore";
 
@@ -26,7 +26,7 @@ export default function Layout() {
   return (
     <SafeAreaView edges={["top"]} style={{ flex: 1 }}>
       <View style={{ zIndex: 2000, elevation: 2000 }}>
-        <TopBar name={user.user_metadata?.name ?? "Usuario"} />
+        <AppBar />
       </View>
 
       <View style={{ flex: 1, zIndex: 1, elevation: 1 }}>

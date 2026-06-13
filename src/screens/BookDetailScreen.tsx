@@ -322,16 +322,14 @@ function TabDetalle({
   );
 }
 
-function TabVocabulario({ bookId }: { bookId: string }) {
-  const [vocab, setVocab] = useState<BookVocabulary[]>([]);
-  const [loading, setLoading] = useState(true);
+function TabVocabulario({
+  vocab,
+  loading,
+}: {
+  vocab: BookVocabulary[];
+  loading: boolean;
+}) {
   const [speakingId, setSpeakingId] = useState<string | null>(null);
-
-  useEffect(() => {
-    getBookVocabulary(bookId)
-      .then(setVocab)
-      .finally(() => setLoading(false));
-  }, [bookId]);
 
   const speak = useCallback(async (id: string, text: string) => {
     setSpeakingId(id);
@@ -689,12 +687,17 @@ export function BookDetailScreen({ bookId }: Props) {
   const books = useBookStore((state) => state.books);
   const [activeTab, setActiveTab] = useState(0);
   const [isFav, setIsFav] = useState(false);
+  const [vocab, setVocab] = useState<BookVocabulary[]>([]);
+  const [vocabLoading, setVocabLoading] = useState(true);
   const user = useAuthStore((s) => s.user);
 
   useEffect(() => {
     if (user) {
       getFavorites(user.id).then((ids) => setIsFav(ids.includes(bookId)));
     }
+    getBookVocabulary(bookId)
+      .then(setVocab)
+      .finally(() => setVocabLoading(false));
   }, [user, bookId]);
 
   const handleFavToggle = async () => {
@@ -983,7 +986,12 @@ export function BookDetailScreen({ bookId }: Props) {
 
       <View style={{ flex: 1, backgroundColor: BG }}>
         {activeTab === 0 && <TabDetalle book={book} />}
-        {activeTab === 1 && <TabVocabulario bookId={book.id} />}
+        {activeTab === 1 && (
+          <TabVocabulario
+            vocab={vocab}
+            loading={vocabLoading}
+          />
+        )}
         {activeTab === 2 && <TabReseñas />}
         {activeTab === 3 && <TabSimilares />}
       </View>

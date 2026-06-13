@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Alert,
   Platform,
@@ -10,15 +10,42 @@ import {
   View,
 } from "react-native";
 import { useAuthStore } from "../store/authStore";
+import { useGamificationStore } from "../store/gamificationStore";
+
+const TEAL = "#078F83";
 
 export function TopBar({ name }: { name: string }) {
   const router = useRouter();
   const [openMenu, setOpenMenu] = useState(false);
   const user = useAuthStore((s) => s.user);
+  const profile = useAuthStore((s) => s.profile);
   const logout = useAuthStore((state) => state.logout);
   const clearMyData = useAuthStore((state) => state.clearMyData);
+  const levels = useGamificationStore((s) => s.levels);
+  const fetchLevels = useGamificationStore((s) => s.fetchLevels);
+  const computeLevel = useGamificationStore((s) => s.computeLevel);
+  const currentLevel = useGamificationStore((s) => s.currentLevel);
+  const nextLevel = useGamificationStore((s) => s.nextLevel);
+
+  const xp = profile?.xp ?? 0;
+  const level = profile?.level ?? 1;
+
+  useEffect(() => {
+    if (levels.length === 0) fetchLevels();
+  }, []);
+
+  useEffect(() => {
+    computeLevel(xp);
+  }, [xp, levels]);
 
   const isAdmin = user?.email === "emmanuelzzz123@gmail.com";
+
+  const xpProgress =
+    currentLevel && nextLevel
+      ? ((xp - currentLevel.xp_required) /
+          (nextLevel.xp_required - currentLevel.xp_required)) *
+        100
+      : 100;
 
   const handleLogout = async () => {
     await logout();
@@ -70,10 +97,52 @@ export function TopBar({ name }: { name: string }) {
         borderColor: "#E5E7EB",
       }}
     >
-      <Text style={{ fontSize: 18, fontWeight: "700" }}>ReadApp</Text>
+      {/* Level & XP */}
+      <View style={{ flexDirection: "row", alignItems: "center", gap: 10, flex: 1 }}>
+        <View
+          style={{
+            backgroundColor: TEAL,
+            borderRadius: 8,
+            paddingHorizontal: 8,
+            paddingVertical: 4,
+          }}
+        >
+          <Text style={{ fontSize: 12, fontWeight: "800", color: "#fff" }}>
+            Nv.{level}
+          </Text>
+        </View>
+
+        <View style={{ flex: 1 }}>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+            <Text style={{ fontSize: 13, fontWeight: "700", color: "#0F172A" }} numberOfLines={1}>
+              {profile?.name ?? name}
+            </Text>
+            <Text style={{ fontSize: 13, fontWeight: "700", color: "#F59E0B" }}>
+              {xp} XP
+            </Text>
+          </View>
+          {nextLevel && (
+            <View style={{ marginTop: 2, flexDirection: "row", alignItems: "center", gap: 4 }}>
+              <View style={{ flex: 1, height: 4, backgroundColor: "#F1F5F9", borderRadius: 2, overflow: "hidden" }}>
+                <View
+                  style={{
+                    height: 4,
+                    borderRadius: 2,
+                    backgroundColor: TEAL,
+                    width: `${Math.min(xpProgress, 100)}%`,
+                  }}
+                />
+              </View>
+              <Text style={{ fontSize: 9, color: "#94A3B8" }}>
+                {xp - currentLevel!.xp_required}/{nextLevel.xp_required - currentLevel!.xp_required}
+              </Text>
+            </View>
+          )}
+        </View>
+      </View>
 
       <TouchableOpacity onPress={() => setOpenMenu((prev) => !prev)}>
-        <Ionicons name="person-circle-outline" size={28} />
+        <Ionicons name="person-circle-outline" size={28} color="#64748B" />
       </TouchableOpacity>
 
       {openMenu && (
