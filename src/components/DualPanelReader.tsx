@@ -2,8 +2,9 @@ import type { Theme } from "@/src/theme";
 import { THEME_COLORS } from "@/src/theme";
 import { ScrollView, View } from "react-native";
 import { PageContent } from "./PageContent";
+import type { SentenceInfo } from "@/src/services/sentences";
 
-type Language = "es" | "en";
+type Language = "es" | "en" | "fr";
 
 type Props = {
   contentTop: string;
@@ -14,12 +15,16 @@ type Props = {
   pageId: string;
   activeParagraph: number | null;
   onParagraphPress: (index: number | null) => void;
+  onSentencePress?: (sentenceGlobalIndex: number) => void;
   fontSize: number;
   theme: Theme;
   boldEnabled: boolean;
   lineSpacing: number;
   sideMargin: number;
   fontFamily: string | undefined;
+  textAlign: "left" | "center" | "right" | "justify";
+  sentences?: SentenceInfo[];
+  activeSentenceIndex?: number | null;
 };
 
 export function DualPanelReader({
@@ -31,12 +36,16 @@ export function DualPanelReader({
   pageId,
   activeParagraph,
   onParagraphPress,
+  onSentencePress,
   fontSize,
   theme,
   boldEnabled,
   lineSpacing,
   sideMargin,
   fontFamily,
+  textAlign,
+  sentences,
+  activeSentenceIndex,
 }: Props) {
   const colors = THEME_COLORS[theme];
 
@@ -60,11 +69,15 @@ export function DualPanelReader({
             pageId={pageId}
             activeParagraph={activeParagraph}
             onParagraphPress={onParagraphPress}
+            onSentencePress={onSentencePress}
             fontSize={fontSize}
             theme={theme}
             boldEnabled={boldEnabled}
             lineSpacing={lineSpacing}
             fontFamily={fontFamily}
+            textAlign={textAlign}
+            sentences={sentences}
+            activeSentenceIndex={activeSentenceIndex}
           />
         </ScrollView>
       </View>
@@ -84,6 +97,7 @@ export function DualPanelReader({
             boldEnabled={boldEnabled}
             lineSpacing={lineSpacing}
             fontFamily={fontFamily}
+            textAlign={textAlign}
           />
         </ScrollView>
       </View>

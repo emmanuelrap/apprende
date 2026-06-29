@@ -14,7 +14,7 @@ type Lang = { code: string; label: string; flag: string; enabled: boolean };
 const LANGUAGES: Lang[] = [
   { code: "es", label: "Español", flag: "🇲🇽", enabled: true },
   { code: "en", label: "English", flag: "🇺🇸", enabled: false },
-  { code: "fr", label: "Français", flag: "🇫🇷", enabled: false },
+  { code: "fr", label: "Français", flag: "🇫🇷", enabled: true },
   { code: "de", label: "Deutsch", flag: "🇩🇪", enabled: false },
   { code: "pt", label: "Português", flag: "🇧🇷", enabled: false },
   { code: "it", label: "Italiano", flag: "🇮🇹", enabled: false },

@@ -1,4 +1,6 @@
+import { colors, shadows } from "@/src/theme";
 import { Ionicons } from "@expo/vector-icons";
+type IoniconsName = keyof typeof Ionicons.glyphMap;
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
@@ -13,6 +15,56 @@ import {
 } from "react-native";
 import { useAuthStore } from "../store/authStore";
 import { useGamificationStore } from "../store/gamificationStore";
+
+function MenuItem({
+  icon,
+  label,
+  onPress,
+  labelColor,
+  fontWeight,
+}: {
+  icon: IoniconsName;
+  label: string;
+  onPress: () => void;
+  labelColor?: string;
+  fontWeight?: "300" | "400" | "500" | "600" | "700" | "800" | "bold";
+}) {
+  return (
+    <TouchableOpacity
+      onPress={onPress}
+      activeOpacity={0.6}
+      style={{
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 10,
+        paddingHorizontal: 14,
+        paddingVertical: 10,
+      }}
+    >
+      <View
+        style={{
+          width: 28,
+          height: 28,
+          borderRadius: 8,
+          backgroundColor: colors.bg,
+          justifyContent: "center",
+          alignItems: "center",
+        }}
+      >
+        <Ionicons name={icon} size={16} color={labelColor || colors.textSecondary} />
+      </View>
+      <Text
+        style={{
+          fontSize: 13,
+          fontWeight: fontWeight || "500",
+          color: labelColor || colors.text,
+        }}
+      >
+        {label}
+      </Text>
+    </TouchableOpacity>
+  );
+}
 
 export function AppBar() {
   const router = useRouter();
@@ -87,21 +139,18 @@ export function AppBar() {
   return (
     <View style={{ position: "relative", zIndex: 3000, elevation: 3000 }}>
       <LinearGradient
-        colors={["#0F766E", "#14B8A6", "#34D399"]}
+        colors={[colors.primaryDark, colors.primaryMedium, colors.primaryLight]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={{
-          borderRadius: 16,
-          marginHorizontal: 12,
-          marginTop: 8,
-          marginBottom: 4,
-          paddingHorizontal: 16,
-          paddingVertical: 12,
-          shadowColor: "#0F766E",
-          shadowOpacity: 0.3,
-          shadowRadius: 12,
+          paddingTop: 12,
+          paddingBottom: 14,
+          paddingHorizontal: 0,
+          shadowColor: colors.primaryDark,
+          shadowOpacity: 0.25,
+          shadowRadius: 10,
           shadowOffset: { width: 0, height: 4 },
-          elevation: 6,
+          elevation: 5,
           overflow: "hidden",
         }}
       >
@@ -112,12 +161,11 @@ export function AppBar() {
             left: 0,
             right: 0,
             bottom: 0,
-            backgroundColor: "rgba(255,255,255,0.08)",
-            borderTopLeftRadius: 16,
+            backgroundColor: "rgba(255,255,255,0.06)",
           }}
         />
 
-        <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+        <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 16 }}>
           {/* Logo + App name */}
           <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
             <View
@@ -137,7 +185,7 @@ export function AppBar() {
             <Text
               style={{ fontSize: 18, fontWeight: "600", letterSpacing: -0.3, color: "#fff" }}
             >
-              AprendeLibros
+              Apprende
             </Text>
           </View>
 
@@ -158,7 +206,7 @@ export function AppBar() {
                     borderColor: "rgba(255,255,255,0.25)",
                   }}
                 >
-                  <Ionicons name="hexagon-outline" size={14} color="#FCD34D" />
+                  <Ionicons name="star-outline" size={14} color="#FCD34D" />
                   <Text style={{ fontSize: 13, fontWeight: "700", color: "#FEF3C7" }}>
                     {xp} XP
                   </Text>
@@ -206,7 +254,7 @@ export function AppBar() {
 
         {/* Progress bar to next level */}
         {nextLevel && (
-          <View style={{ marginTop: 8, flexDirection: "row", alignItems: "center", gap: 6 }}>
+          <View style={{ marginTop: 8, flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 16 }}>
             <View
               style={{
                 flex: 1,
@@ -252,80 +300,140 @@ export function AppBar() {
               position: "absolute",
               right: 12,
               top: 64,
-              width: 210,
+              width: 220,
               backgroundColor: "#FFFFFF",
-              borderWidth: 1,
-              borderColor: "#E5E7EB",
-              borderRadius: 12,
-              paddingVertical: 8,
-              shadowColor: "#000",
-              shadowOpacity: 0.12,
-              shadowRadius: 10,
-              shadowOffset: { width: 0, height: 4 },
-              elevation: 4000,
+              borderRadius: 16,
+              paddingVertical: 6,
+              ...shadows.dropdown,
               zIndex: 4000,
             }}
           >
-            <View style={{ paddingHorizontal: 12, paddingVertical: 8, borderBottomWidth: 0.5, borderBottomColor: "#E5E7EB" }}>
-              <Text style={{ fontSize: 13, fontWeight: "700", color: "#0F172A" }}>{name}</Text>
-              <Text style={{ fontSize: 11, color: "#64748B" }}>Nivel {level} · {xp} XP</Text>
+            {/* Profile card */}
+            <View
+              style={{
+                paddingHorizontal: 14,
+                paddingVertical: 12,
+                borderBottomWidth: 0.5,
+                borderBottomColor: colors.border,
+              }}
+            >
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+                <View
+                  style={{
+                    width: 36,
+                    height: 36,
+                    borderRadius: 18,
+                    backgroundColor: colors.primaryBg,
+                    justifyContent: "center",
+                    alignItems: "center",
+                  }}
+                >
+                  {avatarUrl ? (
+                    <Image
+                      source={{ uri: avatarUrl }}
+                      style={{ width: 36, height: 36, borderRadius: 18 }}
+                    />
+                  ) : (
+                    <Text style={{ fontSize: 14, fontWeight: "700", color: colors.primaryDarkest }}>
+                      {name[0]?.toUpperCase() || "U"}
+                    </Text>
+                  )}
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text
+                    style={{ fontSize: 14, fontWeight: "700", color: colors.text }}
+                    numberOfLines={1}
+                  >
+                    {name}
+                  </Text>
+                  <Text style={{ fontSize: 11, color: colors.textSecondary }}>
+                    Nivel {level} · {xp} XP
+                  </Text>
+                </View>
+              </View>
+              {/* Mini level progress */}
+              <View style={{ marginTop: 8, flexDirection: "row", alignItems: "center", gap: 6 }}>
+                <View
+                  style={{
+                    flex: 1,
+                    height: 3,
+                    backgroundColor: colors.border,
+                    borderRadius: 2,
+                    overflow: "hidden",
+                  }}
+                >
+                  <View
+                    style={{
+                      height: 3,
+                      borderRadius: 2,
+                      backgroundColor: colors.primary,
+                      width: `${Math.min(xpProgress, 100)}%`,
+                    }}
+                  />
+                </View>
+                <Text style={{ fontSize: 9, color: colors.textMuted }}>
+                  {nextLevel ? `${xp - currentLevel!.xp_required}/${nextLevel.xp_required - currentLevel!.xp_required}` : ""}
+                </Text>
+              </View>
             </View>
 
-            <TouchableOpacity
+            {/* Menu items */}
+            <MenuItem
+              icon="person-outline"
+              label="Ver mi perfil"
               onPress={() => {
                 setOpenMenu(false);
                 router.push("/profile");
               }}
-              style={{ paddingHorizontal: 12, paddingVertical: 10 }}
-            >
-              <Text>Ver mi perfil</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              onPress={() => {
-                setOpenMenu(false);
-              }}
-              style={{ paddingHorizontal: 12, paddingVertical: 10 }}
-            >
-              <Text>Settings</Text>
-            </TouchableOpacity>
-
+            />
+            <MenuItem
+              icon="settings-outline"
+              label="Configuración"
+              onPress={() => setOpenMenu(false)}
+            />
+            <View style={{ height: 6 }} />
             {isAdmin && (
               <>
-                <TouchableOpacity
+                <View style={{ paddingHorizontal: 14, paddingBottom: 4 }}>
+                  <Text style={{ fontSize: 9, fontWeight: "600", color: colors.textMuted, textTransform: "uppercase", letterSpacing: 0.5 }}>
+                    Admin
+                  </Text>
+                </View>
+                <MenuItem
+                  icon="people-outline"
+                  label="Usuarios"
+                  labelColor="#6366F1"
                   onPress={() => {
                     setOpenMenu(false);
                     router.push("/admin/users");
                   }}
-                  style={{ paddingHorizontal: 12, paddingVertical: 10 }}
-                >
-                  <Text style={{ color: "#6366F1", fontWeight: "600" }}>Admin Usuarios</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
+                />
+                <MenuItem
+                  icon="book-outline"
+                  label="Libros"
+                  labelColor="#6366F1"
                   onPress={() => {
                     setOpenMenu(false);
                     router.push("/admin/books");
                   }}
-                  style={{ paddingHorizontal: 12, paddingVertical: 10 }}
-                >
-                  <Text style={{ color: "#6366F1", fontWeight: "600" }}>Admin Libros</Text>
-                </TouchableOpacity>
+                />
+                <View style={{ height: 6 }} />
               </>
             )}
-
-            <TouchableOpacity
+            <MenuItem
+              icon="trash-outline"
+              label="Borrar mis datos"
+              labelColor={colors.error}
               onPress={handleClearData}
-              style={{ paddingHorizontal: 12, paddingVertical: 10 }}
-            >
-              <Text style={{ color: "#B91C1C", fontWeight: "600" }}>Borrar mis datos</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
+            />
+            <View style={{ height: 4 }} />
+            <MenuItem
+              icon="log-out-outline"
+              label="Cerrar sesión"
+              labelColor={colors.text}
+              fontWeight="600"
               onPress={handleLogout}
-              style={{ paddingHorizontal: 12, paddingVertical: 10 }}
-            >
-              <Text style={{ fontWeight: "600" }}>Cerrar sesion</Text>
-            </TouchableOpacity>
+            />
           </View>
         </>
       )}

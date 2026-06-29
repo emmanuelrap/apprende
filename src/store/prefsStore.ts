@@ -11,6 +11,7 @@ type AppSettings = {
   lineSpacing: number;
   sideMargin: number;
   fontFamily: string | undefined;
+  textAlign: "left" | "center" | "right" | "justify";
 };
 
 type PrefsStore = {
@@ -27,7 +28,7 @@ export const usePrefsStore = create<PrefsStore>()(
     (set) => ({
       nativeLanguage: null,
       interests: [],
-      appSettings: { fontSize: 16, theme: "light", readerMode: "dual", boldEnabled: false, lineSpacing: 12, sideMargin: 16, fontFamily: undefined },
+      appSettings: { fontSize: 16, theme: "light", readerMode: "dual", boldEnabled: false, lineSpacing: 12, sideMargin: 16, fontFamily: undefined, textAlign: "justify" },
       setNativeLanguage: (lang) => set({ nativeLanguage: lang }),
       setInterests: (categoryIds) => set({ interests: categoryIds }),
       setAppSettings: (settings) =>

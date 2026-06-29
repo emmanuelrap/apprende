@@ -1,6 +1,7 @@
 import { useRouter } from "expo-router";
 import { FlatList, Image, Text, TouchableOpacity, View } from "react-native";
 import { difficultyLabel } from "@/src/services/recorridos";
+import { colors } from "@/src/theme";
 
 type Recorrido = {
   id: string;
@@ -15,17 +16,6 @@ type Recorrido = {
 const CARD_HEIGHT = 160;
 const CARD_WIDTH = 280;
 
-const COVER_COLORS = [
-  ["#078F83", "#056860"],
-  ["#6366F1", "#4F46E5"],
-  ["#E11D48", "#BE123C"],
-  ["#D97706", "#B45309"],
-  ["#7C3AED", "#6D28D9"],
-  ["#0891B2", "#0E7490"],
-  ["#059669", "#047857"],
-  ["#DB2777", "#BE185D"],
-];
-
 function StatusBadge({ completed, inProgress }: { completed: boolean; inProgress: boolean }) {
   if (!completed && !inProgress) return null;
   const text = completed ? "Completado" : "En curso";
@@ -37,7 +27,7 @@ function StatusBadge({ completed, inProgress }: { completed: boolean; inProgress
   );
 }
 
-export function RecorridoSlider({ recorridos }: { recorridos: Recorrido[] }) {
+export function RecorridoSlider({ recorridos, onSeeAll }: { recorridos: Recorrido[]; onSeeAll?: () => void }) {
   const router = useRouter();
 
   return (
@@ -47,10 +37,46 @@ export function RecorridoSlider({ recorridos }: { recorridos: Recorrido[] }) {
       showsHorizontalScrollIndicator={false}
       contentContainerStyle={{ paddingHorizontal: 16, gap: 12, paddingVertical: 8 }}
       keyExtractor={(item) => item.id}
+      ListFooterComponent={
+        onSeeAll ? (
+          <TouchableOpacity
+            onPress={onSeeAll}
+            activeOpacity={0.7}
+            style={{
+              width: 100,
+              height: CARD_HEIGHT,
+              borderRadius: 16,
+              backgroundColor: colors.primary + "0A",
+              justifyContent: "center",
+              alignItems: "center",
+              alignSelf: "center",
+            }}
+          >
+            <View
+              style={{
+                width: 44,
+                height: 44,
+                borderRadius: 22,
+                backgroundColor: colors.primary + "18",
+                justifyContent: "center",
+                alignItems: "center",
+                marginBottom: 8,
+              }}
+            >
+              <Text style={{ fontSize: 18, color: colors.primary, fontWeight: "700" }}>
+                →
+              </Text>
+            </View>
+            <Text style={{ fontSize: 13, fontWeight: "600", color: colors.primary }}>
+              Ver más
+            </Text>
+          </TouchableOpacity>
+        ) : null
+      }
       renderItem={({ item, index }) => {
         const completed = item.progress >= 100;
         const inProgress = item.progress > 0 && !completed;
-        const colors = COVER_COLORS[index % COVER_COLORS.length];
+        const coverColors = colors.coverColors[index % colors.coverColors.length];
 
         return (
           <TouchableOpacity
@@ -74,7 +100,7 @@ export function RecorridoSlider({ recorridos }: { recorridos: Recorrido[] }) {
               }}
             >
               {/* Cover image on the left */}
-              <View style={{ width: 110, height: CARD_HEIGHT, backgroundColor: colors[0] }}>
+              <View style={{ width: 110, height: CARD_HEIGHT, backgroundColor: coverColors[0] }}>
                 {item.cover ? (
                   <Image
                     source={{ uri: item.cover }}
@@ -103,7 +129,7 @@ export function RecorridoSlider({ recorridos }: { recorridos: Recorrido[] }) {
                 {inProgress && (
                   <View>
                     <View style={{ height: 4, backgroundColor: "#F1F5F9", borderRadius: 2, overflow: "hidden" }}>
-                      <View style={{ height: 4, borderRadius: 2, backgroundColor: "#078F83", width: `${item.progress}%` }} />
+                      <View style={{ height: 4, borderRadius: 2, backgroundColor: colors.primary, width: `${item.progress}%` }} />
                     </View>
                     <Text style={{ fontSize: 9, color: "#94A3B8", marginTop: 3 }}>{item.progress}% completado</Text>
                   </View>
@@ -117,7 +143,7 @@ export function RecorridoSlider({ recorridos }: { recorridos: Recorrido[] }) {
 
                 {!completed && !inProgress && (
                   <View style={{ backgroundColor: "#E8F5F3", borderRadius: 6, paddingHorizontal: 8, paddingVertical: 4, alignSelf: "flex-start" }}>
-                    <Text style={{ fontSize: 10, fontWeight: "600", color: "#078F83" }}>🗺️ Explorar</Text>
+                    <Text style={{ fontSize: 10, fontWeight: "600", color: colors.primary }}>🗺️ Explorar</Text>
                   </View>
                 )}
               </View>

@@ -140,6 +140,7 @@ export default function AdminBookForm() {
         contents: [
           { language: "es", content: "", audio_url: "" },
           { language: "en", content: "", audio_url: "" },
+          { language: "fr", content: "", audio_url: "" },
         ],
       },
     ]);

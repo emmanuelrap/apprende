@@ -1,3 +1,4 @@
+import { AppBar } from "@/src/components/AppBar";
 import { BookSlider } from "@/src/components/BookSlider";
 import { ChipSelector } from "@/src/components/ChipSelector";
 import { FilterModal } from "@/src/components/FilterModal";
@@ -5,18 +6,17 @@ import { HomeLoading } from "@/src/components/HomeLoading";
 import { RecorridoSlider } from "@/src/components/RecorridoSlider";
 import { SearchInput } from "@/src/components/SearchInput";
 import { TrophyUnlockedScreen } from "@/src/screens/TrophyUnlockedScreen";
+import { getBooksWithProgress } from "@/src/services/books";
 import { getFavorites } from "@/src/services/favorites";
+import { supabase } from "@/src/services/supabase";
 import { useAuthStore } from "@/src/store/authStore";
-import { useBookStore } from "@/src/store/bookStore";
 import { useFilterStore } from "@/src/store/filterStore";
 import { useGamificationStore } from "@/src/store/gamificationStore";
 import { useRecorridoStore } from "@/src/store/recorridoStore";
+import { colors, typography } from "@/src/theme";
 import { useFocusEffect, useRouter } from "expo-router";
-import { useCallback, useEffect, useRef, useState } from "react";
-import { Animated, RefreshControl, Text, TouchableOpacity, View } from "react-native";
-// test para git
-
-const TEAL = "#078F83";
+import { useCallback, useEffect, useState } from "react";
+import { RefreshControl, ScrollView, Text, TouchableOpacity, View } from "react-native";
 
 const FILTROS_LECTURA = [
   { id: "all", name: "Todos" },
@@ -24,43 +24,45 @@ const FILTROS_LECTURA = [
   { id: "reading", name: "Leyendo" },
   { id: "completed", name: "Leídos" },
 ];
+const MAX_VISIBLE = 10;
 
-function SectionHeader({
-  title,
-  onSeeAll,
-}: {
-  title: string;
-  onSeeAll?: () => void;
-}) {
+function SectionHeader({ title, count }: { title: string; count?: number }) {
   return (
     <View
       style={{
         flexDirection: "row",
-        justifyContent: "space-between",
         alignItems: "center",
+        justifyContent: "space-between",
         marginBottom: 12,
         marginTop: 4,
       }}
     >
-      <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+      <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
         <View
           style={{
-            width: 3,
-            height: 16,
+            width: 4,
+            height: 20,
             borderRadius: 2,
-            backgroundColor: TEAL,
+            backgroundColor: colors.primary,
           }}
         />
-        <Text style={{ fontSize: 17, fontWeight: "700", color: "#0F172A" }}>
+        <Text style={{ fontSize: 17, fontWeight: "700", color: colors.text, letterSpacing: -0.3 }}>
           {title}
         </Text>
       </View>
-      {onSeeAll && (
-        <TouchableOpacity onPress={onSeeAll} activeOpacity={0.7}>
-          <Text style={{ fontSize: 12, fontWeight: "600", color: TEAL }}>
-            Ver más ›
+      {count !== undefined && (
+        <View
+          style={{
+            backgroundColor: colors.primaryBg,
+            borderRadius: 10,
+            paddingHorizontal: 8,
+            paddingVertical: 2,
+          }}
+        >
+          <Text style={{ fontSize: 11, fontWeight: "600", color: colors.primaryDarkest }}>
+            {count}
           </Text>
-        </TouchableOpacity>
+        </View>
       )}
     </View>
   );
@@ -70,7 +72,6 @@ export default function HomeScreen() {
   const router = useRouter();
 
   const { profile, isLoading: authLoading, user } = useAuthStore();
-  const { books, isLoading: booksLoading, fetchBooks } = useBookStore();
   const { recorridos, fetchRecorridos } = useRecorridoStore();
   const categories = useFilterStore((s) => s.categories);
   const tags = useFilterStore((s) => s.tags);
@@ -81,58 +82,128 @@ export default function HomeScreen() {
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [filterOpen, setFilterOpen] = useState(false);
+  const [filterOpening, setFilterOpening] = useState(false);
   const [pendingTrophy, setPendingTrophy] = useState<any>(null);
-  const [selectedFiltroLectura, setSelectedFiltroLectura] = useState<
-    string | null
-  >("all");
+  const [selectedFiltroLectura, setSelectedFiltroLectura] = useState<string | null>("all");
   const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
   const [refreshing, setRefreshing] = useState(false);
-  const scrollY = useRef(new Animated.Value(0)).current;
+  const [isLoading, setIsLoading] = useState(true);
+  const [fetchError, setFetchError] = useState<string | null>(null);
+  const [discoverBooks, setDiscoverBooks] = useState<any[]>([]);
+  const [categoryBooksMap, setCategoryBooksMap] = useState<Record<string, any[]>>({});
+  const [tagBooksMap, setTagBooksMap] = useState<Record<string, any[]>>({});
+  const [favoriteBooks, setFavoriteBooks] = useState<any[]>([]);
+  const [readingBooks, setReadingBooks] = useState<any[]>([]);
 
-  useEffect(() => {
+  const fetchSectionData = useCallback(async () => {
     if (!user?.id) return;
-    fetchBooks({
-      tagId: selectedTag,
-      categoryIds:
-        selectedCategories.length > 0 ? selectedCategories : undefined,
-      search,
+    setFetchError(null);
+
+    const catFilter = selectedCategories.length > 0 ? selectedCategories : undefined;
+    const tagFilter = selectedTag || undefined;
+    const searchFilter = search || undefined;
+    const baseFilters = { search: searchFilter, tagId: tagFilter };
+
+    // Descubrir
+    const discoverP = getBooksWithProgress(user.id, {
+      ...baseFilters,
+      categoryIds: catFilter,
+      limit: MAX_VISIBLE,
     });
-    fetchRecorridos();
-    getFavorites(user.id).then((ids) => setFavoriteIds(new Set(ids)));
-  }, [
-    fetchBooks,
-    fetchRecorridos,
-    search,
-    selectedCategories,
-    selectedTag,
-    user?.id,
-  ]);
+
+    // Category sliders: each fetches its own books + applies tag/search filters
+    const catPromises = categories
+      .filter((cat) => !catFilter || catFilter.includes(cat.id))
+      .map((cat) =>
+        getBooksWithProgress(user.id, {
+          ...baseFilters,
+          categoryIds: [cat.id],
+          limit: MAX_VISIBLE + 1,
+        }).then((books) => ({ catId: cat.id, books })),
+      );
+
+    // Tag sliders: each fetches its own books + applies category/search filters
+    const tagPromises = tags
+      .filter((tag) => !tagFilter || tagFilter === tag.id)
+      .map((tag) =>
+        getBooksWithProgress(user.id, {
+          search: searchFilter,
+          categoryIds: catFilter,
+          tagId: tag.id,
+          limit: MAX_VISIBLE + 1,
+        }).then((books) => ({ tagId: tag.id, books })),
+      );
+
+    // Favorites: get IDs first, then fetch books
+    const favIds = await getFavorites(user.id);
+    setFavoriteIds(new Set(favIds));
+
+    const favP =
+      favIds.length > 0
+        ? getBooksWithProgress(user.id, {
+            ...baseFilters,
+            bookIds: favIds,
+            limit: MAX_VISIBLE,
+          })
+        : Promise.resolve([]);
+
+    const readingP = getBooksWithProgress(user.id, {
+      ...baseFilters,
+      status: "reading",
+      limit: MAX_VISIBLE,
+    });
+
+    let discovered: any[], catResults: any[], tagResults: any[], favBooks: any[], reading: any[];
+    try {
+      [discovered, catResults, tagResults, favBooks, reading] = await Promise.all([
+        discoverP,
+        Promise.all(catPromises),
+        Promise.all(tagPromises),
+        favP,
+        readingP,
+      ]);
+    } catch (e) {
+      setFetchError("Error al cargar datos. Intenta de nuevo.");
+      setIsLoading(false);
+      return;
+    }
+
+    setDiscoverBooks(discovered);
+    setFavoriteBooks(favBooks);
+    setReadingBooks(reading);
+
+    const catMap: Record<string, any[]> = {};
+    catResults.forEach((r: any) => {
+      catMap[r.catId] = r.books;
+    });
+    setCategoryBooksMap(catMap);
+
+    const tagMap: Record<string, any[]> = {};
+    tagResults.forEach((r: any) => {
+      tagMap[r.tagId] = r.books;
+    });
+    setTagBooksMap(tagMap);
+
+    setIsLoading(false);
+  }, [user?.id, categories, tags, search, selectedTag, selectedCategories]);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (!user?.id) return;
+      fetchSectionData();
+      fetchRecorridos();
+    }, [fetchSectionData, fetchRecorridos, user?.id]),
+  );
 
   const onRefresh = useCallback(async () => {
     if (!user?.id || refreshing) return;
     setRefreshing(true);
     try {
-      await fetchBooks({
-        tagId: selectedTag,
-        categoryIds:
-          selectedCategories.length > 0 ? selectedCategories : undefined,
-        search,
-      });
-      await fetchRecorridos();
-      const ids = await getFavorites(user.id);
-      setFavoriteIds(new Set(ids));
+      await Promise.all([fetchSectionData(), fetchRecorridos()]);
     } finally {
       setRefreshing(false);
     }
-  }, [
-    user,
-    refreshing,
-    fetchBooks,
-    fetchRecorridos,
-    selectedTag,
-    selectedCategories,
-    search,
-  ]);
+  }, [user, refreshing, fetchSectionData, fetchRecorridos]);
 
   useFocusEffect(
     useCallback(() => {
@@ -157,9 +228,8 @@ export default function HomeScreen() {
     }
   }, [authLoading, user]);
 
-  const loading = authLoading || booksLoading;
+  const loading = authLoading || isLoading || refreshing;
   const userLevel = profile?.level ?? 1;
-  const favoriteBooks = books.filter((b) => favoriteIds.has(b.id));
 
   const toggleFav = useCallback((bookId: string) => {
     setFavoriteIds((prev) => {
@@ -168,7 +238,22 @@ export default function HomeScreen() {
       else next.add(bookId);
       return next;
     });
-  }, []);
+    setFavoriteBooks((prev) => {
+      const exists = prev.some((b) => b.id === bookId);
+      if (exists) return prev.filter((b) => b.id !== bookId);
+      const fromDiscover = discoverBooks.find((b) => b.id === bookId);
+      if (fromDiscover) return [...prev, fromDiscover];
+      for (const list of Object.values(categoryBooksMap)) {
+        const found = (list as any[]).find((b: any) => b.id === bookId);
+        if (found) return [...prev, found];
+      }
+      for (const list of Object.values(tagBooksMap)) {
+        const found = (list as any[]).find((b: any) => b.id === bookId);
+        if (found) return [...prev, found];
+      }
+      return prev;
+    });
+  }, [discoverBooks, categoryBooksMap, tagBooksMap]);
 
   if (pendingTrophy) {
     return (
@@ -179,68 +264,58 @@ export default function HomeScreen() {
     );
   }
 
-  const spin = scrollY.interpolate({
-    inputRange: [-100, 0],
-    outputRange: ["360deg", "0deg"],
-    extrapolate: "clamp",
-  });
-  const pullOpacity = scrollY.interpolate({
-    inputRange: [-100, -20, 0],
-    outputRange: [1, 0.4, 0],
-    extrapolate: "clamp",
-  });
-
   return (
-    <View style={{ flex: 1, backgroundColor: "#F7FAFC" }}>
-      <Animated.ScrollView
+    <View style={{ flex: 1, backgroundColor: colors.bg }}>
+      <AppBar />
+      {fetchError ? (
+        <View style={{ flex: 1, justifyContent: "center", alignItems: "center", padding: 32, gap: 12 }}>
+          <Text style={{ fontSize: 40 }}>⚠️</Text>
+          <Text style={{ ...typography.body, textAlign: "center", color: colors.textSecondary }}>
+            {fetchError}
+          </Text>
+          <TouchableOpacity
+            onPress={() => { setIsLoading(true); fetchSectionData(); }}
+            style={{
+              backgroundColor: colors.primary,
+              borderRadius: 12,
+              paddingHorizontal: 24,
+              paddingVertical: 12,
+              marginTop: 4,
+            }}
+          >
+            <Text style={{ fontWeight: "700", color: "#fff" }}>Reintentar</Text>
+          </TouchableOpacity>
+        </View>
+      ) : (
+      <ScrollView
         contentContainerStyle={{
           paddingHorizontal: 0,
-          paddingTop: 12,
+          paddingTop: 4,
           paddingBottom: 32,
         }}
         showsVerticalScrollIndicator={false}
         bounces
         overScrollMode="always"
-        scrollEventThrottle={16}
-        onScroll={Animated.event(
-          [{ nativeEvent: { contentOffset: { y: scrollY } } }],
-          { useNativeDriver: true },
-        )}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            tintColor="#078F83"
+            tintColor={colors.primary}
           />
         }
       >
-        {/* Pull indicator */}
-        <View
-          style={{
-            alignItems: "center",
-            height: 24,
-            justifyContent: "center",
-            marginBottom: -24,
-            overflow: "visible",
-          }}
-        >
-          <Animated.Text
-            style={{
-              fontSize: 20,
-              transform: [{ rotate: spin }],
-              opacity: pullOpacity,
-              color: "#078F83",
-            }}
-          >
-            ↻
-          </Animated.Text>
-        </View>
-
         {/* Search + filter */}
         <SearchInput
           value={search}
           onChangeText={setSearch}
-          onFilterPress={() => setFilterOpen(true)}
+          onFilterPress={() => {
+            setFilterOpening(true);
+            requestAnimationFrame(() => {
+              setFilterOpen(true);
+              setFilterOpening(false);
+            });
+          }}
+          filterLoading={filterOpening}
         />
 
         {/* Status filter chips */}
@@ -253,27 +328,52 @@ export default function HomeScreen() {
           />
         </View>
 
-        {/* Favorites slider */}
-        {favoriteIds.size > 0 && (
+        {/* Continue reading slider */}
+        {readingBooks.length > 0 && (
           <View style={{ paddingHorizontal: 16, marginTop: 16 }}>
-            <SectionHeader
-              title="Mis favoritos"
-              onSeeAll={() =>
-                router.push(
-                  `/list?type=favorites&title=${encodeURIComponent("Mis favoritos")}` as any,
-                )
-              }
-            />
+            <SectionHeader title="Continue leyendo" count={readingBooks.length} />
             <BookSlider
-              books={favoriteBooks.map((b) => ({
+              books={readingBooks.slice(0, MAX_VISIBLE).map((b) => ({
                 id: b.id,
                 title: b.title,
                 cover: b.cover,
                 difficulty: b.difficulty,
+                progress: b.progress,
+                status: b.status,
               }))}
               favoriteIds={favoriteIds}
               userId={user?.id ?? ""}
               onToggleFavorite={toggleFav}
+              onSeeAll={readingBooks.length > MAX_VISIBLE ? () =>
+                router.push(
+                  `/list?type=reading&title=${encodeURIComponent("Continue leyendo")}` as any,
+                )
+              : undefined}
+            />
+          </View>
+        )}
+
+        {/* Favorites slider */}
+        {favoriteBooks.length > 0 && (
+          <View style={{ paddingHorizontal: 16, marginTop: 16 }}>
+            <SectionHeader title="Mis favoritos" />
+            <BookSlider
+              books={favoriteBooks.slice(0, MAX_VISIBLE).map((b) => ({
+                id: b.id,
+                title: b.title,
+                cover: b.cover,
+                difficulty: b.difficulty,
+                progress: b.progress,
+                status: b.status,
+              }))}
+              favoriteIds={favoriteIds}
+              userId={user?.id ?? ""}
+              onToggleFavorite={toggleFav}
+              onSeeAll={favoriteIds.size > MAX_VISIBLE ? () =>
+                router.push(
+                  `/list?type=favorites&title=${encodeURIComponent("Mis favoritos")}` as any,
+                )
+              : undefined}
             />
           </View>
         )}
@@ -281,69 +381,68 @@ export default function HomeScreen() {
         {/* Recorridos */}
         {recorridos.length > 0 && (
           <View style={{ paddingHorizontal: 16, marginTop: 8 }}>
-            <SectionHeader
-              title="Recorridos"
-              onSeeAll={() =>
+            <SectionHeader title="Recorridos" />
+            <RecorridoSlider
+              recorridos={recorridos}
+              onSeeAll={recorridos.length > MAX_VISIBLE ? () =>
                 router.push(
                   `/list?type=recorridos&title=${encodeURIComponent("Recorridos")}` as any,
                 )
-              }
+              : undefined}
             />
-            <RecorridoSlider recorridos={recorridos} />
           </View>
         )}
 
-        {/* Book slider */}
-        {books.length > 0 && (
+        {/* Discover slider */}
+        {discoverBooks.length > 0 && (
           <View style={{ paddingHorizontal: 16, marginTop: 8 }}>
-            <SectionHeader
-              title="Descubrir"
-              onSeeAll={() =>
-                router.push(
-                  `/list?type=discover&title=${encodeURIComponent("Descubrir")}` as any,
-                )
-              }
-            />
+            <SectionHeader title="Descubrir" />
             <BookSlider
-              books={books.map((b) => ({
+              books={discoverBooks.slice(0, MAX_VISIBLE).map((b) => ({
                 id: b.id,
                 title: b.title,
                 cover: b.cover,
                 difficulty: b.difficulty,
+                progress: b.progress,
+                status: b.status,
               }))}
               favoriteIds={favoriteIds}
               userId={user?.id ?? ""}
               onToggleFavorite={toggleFav}
+              onSeeAll={discoverBooks.length > MAX_VISIBLE ? () =>
+                router.push(
+                  `/list?type=discover&title=${encodeURIComponent("Descubrir")}` as any,
+                )
+              : undefined}
             />
           </View>
         )}
 
         {/* Category sliders */}
         {categories.map((cat) => {
-          const catBooks = books.filter((b) =>
-            b.categories?.some((c) => c.id === cat.id),
-          );
+          const catBooks = categoryBooksMap[cat.id] ?? [];
           if (catBooks.length === 0) return null;
+          const visible = catBooks.slice(0, MAX_VISIBLE);
           return (
             <View key={cat.id} style={{ paddingHorizontal: 16, marginTop: 16 }}>
-              <SectionHeader
-                title={cat.name}
-                onSeeAll={() =>
-                  router.push(
-                    `/list?type=category&catId=${cat.id}&title=${encodeURIComponent(cat.name)}` as any,
-                  )
-                }
-              />
+              <SectionHeader title={cat.name} />
               <BookSlider
-                books={catBooks.map((b) => ({
+                books={visible.map((b) => ({
                   id: b.id,
                   title: b.title,
                   cover: b.cover,
                   difficulty: b.difficulty,
+                  progress: b.progress,
+                  status: b.status,
                 }))}
                 favoriteIds={favoriteIds}
                 userId={user?.id ?? ""}
                 onToggleFavorite={toggleFav}
+                onSeeAll={catBooks.length > MAX_VISIBLE ? () =>
+                  router.push(
+                    `/list?type=category&catId=${cat.id}&title=${encodeURIComponent(cat.name)}` as any,
+                  )
+                : undefined}
               />
             </View>
           );
@@ -351,36 +450,36 @@ export default function HomeScreen() {
 
         {/* Tag sliders */}
         {tags.map((tag) => {
-          const tagBooks = books.filter((b) =>
-            b.tags?.some((t) => t.id === tag.id),
-          );
+          const tagBooks = tagBooksMap[tag.id] ?? [];
           if (tagBooks.length === 0) return null;
+          const visible = tagBooks.slice(0, MAX_VISIBLE);
           return (
             <View key={tag.id} style={{ paddingHorizontal: 16, marginTop: 16 }}>
-              <SectionHeader
-                title={tag.name}
-                onSeeAll={() =>
-                  router.push(
-                    `/list?type=tag&tagId=${tag.id}&title=${encodeURIComponent(tag.name)}` as any,
-                  )
-                }
-              />
+              <SectionHeader title={tag.name} />
               <BookSlider
-                books={tagBooks.map((b) => ({
+                books={visible.map((b) => ({
                   id: b.id,
                   title: b.title,
                   cover: b.cover,
                   difficulty: b.difficulty,
+                  progress: b.progress,
+                  status: b.status,
                 }))}
                 favoriteIds={favoriteIds}
                 userId={user?.id ?? ""}
                 onToggleFavorite={toggleFav}
+                onSeeAll={tagBooks.length > MAX_VISIBLE ? () =>
+                  router.push(
+                    `/list?type=tag&tagId=${tag.id}&title=${encodeURIComponent(tag.name)}` as any,
+                  )
+                : undefined}
               />
             </View>
           );
         })}
 
-      </Animated.ScrollView>
+      </ScrollView>
+      )}
 
       {loading && <HomeLoading />}
 
@@ -388,11 +487,7 @@ export default function HomeScreen() {
         visible={filterOpen}
         categories={categories}
         selected={selectedCategories}
-        onToggle={(id) =>
-          setSelectedCategories((prev) =>
-            prev.includes(id) ? prev.filter((c) => c !== id) : [...prev, id],
-          )
-        }
+        onApply={(ids) => setSelectedCategories(ids)}
         onClose={() => setFilterOpen(false)}
       />
     </View>

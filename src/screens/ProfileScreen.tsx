@@ -1,14 +1,22 @@
+import { colors } from "@/src/theme";
 import { useProfileBootstrap } from "@/src/hooks/useProfileBootstrap";
 import { TrophyUnlockedScreen } from "@/src/screens/TrophyUnlockedScreen";
 import { useAuthStore } from "@/src/store/authStore";
 import { useGamificationStore } from "@/src/store/gamificationStore";
 import { useReadingStore } from "@/src/store/readingStore";
-import { ScrollView, Text, View } from "react-native";
-
-
-const TEAL = "#078F83";
-const TEAL_LIGHT = "#E1F5EE";
-const BG = "#F4F6F8";
+import { Ionicons } from "@expo/vector-icons";
+import { useState } from "react";
+import {
+  ActivityIndicator,
+  Alert,
+  Modal,
+  Pressable,
+  ScrollView,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
 
 const LEVELS = [
   { label: "Principiante", sub: "A1 - A2", minXp: 0 },
@@ -48,7 +56,7 @@ function Avatar({ name }: { name: string }) {
           height: 110,
           borderRadius: 55,
           borderWidth: 4,
-          borderColor: TEAL_LIGHT,
+          borderColor: colors.primaryBg,
           justifyContent: "center",
           alignItems: "center",
           backgroundColor: "#fff",
@@ -60,8 +68,8 @@ function Avatar({ name }: { name: string }) {
             height: 94,
             borderRadius: 47,
             borderWidth: 3,
-            borderColor: TEAL,
-            backgroundColor: TEAL,
+            borderColor: colors.primary,
+            backgroundColor: colors.primary,
             justifyContent: "center",
             alignItems: "center",
           }}
@@ -122,7 +130,7 @@ function ProgressPath({ xp }: { xp: number }) {
                     height: 48,
                     borderRadius: 24,
                     borderWidth: isCurrent ? 3 : 2,
-                    borderColor: isCurrent || isPassed ? TEAL : "#CBD5E1",
+                    borderColor: isCurrent || isPassed ? colors.primary : "#CBD5E1",
                     backgroundColor: isCurrent || isPassed ? "#fff" : "#F1F5F9",
                     justifyContent: "center",
                     alignItems: "center",
@@ -154,7 +162,7 @@ function ProgressPath({ xp }: { xp: number }) {
                       style={{
                         height: 4,
                         borderRadius: 2,
-                        backgroundColor: fillPercent > 0 ? TEAL : "#E2E8F0",
+                        backgroundColor: fillPercent > 0 ? colors.primary : "#E2E8F0",
                         width: `${fillPercent}%`,
                       }}
                     />
@@ -187,7 +195,7 @@ function ProgressPath({ xp }: { xp: number }) {
         <View
           style={{
             marginTop: 14,
-            backgroundColor: TEAL_LIGHT,
+            backgroundColor: colors.primaryBg,
             borderRadius: 12,
             padding: 12,
             flexDirection: "row",
@@ -196,7 +204,7 @@ function ProgressPath({ xp }: { xp: number }) {
           }}
         >
           <View style={{ flex: 1, marginRight: 12 }}>
-            <Text style={{ fontSize: 12, color: TEAL, fontWeight: "600" }}>
+            <Text style={{ fontSize: 12, color: colors.primary, fontWeight: "600" }}>
               Te faltan <Text style={{ fontWeight: "900" }}>{xpNeeded} XP</Text>{" "}
               para {next.label}
             </Text>
@@ -213,13 +221,13 @@ function ProgressPath({ xp }: { xp: number }) {
                 style={{
                   height: 5,
                   borderRadius: 4,
-                  backgroundColor: TEAL,
+                  backgroundColor: colors.primary,
                   width: `${progress}%`,
                 }}
               />
             </View>
           </View>
-          <Text style={{ fontSize: 14, fontWeight: "800", color: TEAL }}>
+          <Text style={{ fontSize: 14, fontWeight: "800", color: colors.primary }}>
             {Math.round(progress)}%
           </Text>
         </View>
@@ -421,7 +429,7 @@ function AchievementsCard({ trophies }: any) {
               width: 46,
               height: 46,
               borderRadius: 12,
-              backgroundColor: TEAL_LIGHT,
+              backgroundColor: colors.primaryBg,
               justifyContent: "center",
               alignItems: "center",
               flexShrink: 0,
@@ -451,7 +459,7 @@ function AchievementsCard({ trophies }: any) {
                 style={{
                   fontSize: 13,
                   fontWeight: "800",
-                  color: TEAL,
+                  color: colors.primary,
                   marginLeft: 6,
                 }}
               >
@@ -658,7 +666,7 @@ function XpHistory({ events }: any) {
                   ? "Logro"
                   : e.source}
           </Text>
-          <Text style={{ fontWeight: "700", color: TEAL }}>+{e.amount} XP</Text>
+          <Text style={{ fontWeight: "700", color: colors.primary }}>+{e.amount} XP</Text>
         </View>
       ))}
     </View>
@@ -667,9 +675,13 @@ function XpHistory({ events }: any) {
 
 export default function ProfileScreen() {
   const { loading, newTrophy, clearNewTrophy } = useProfileBootstrap();
-  const { profile, xpEvents } = useAuthStore();
+  const { profile, xpEvents, user, updateProfile } = useAuthStore();
   const { userBooks, sessions } = useReadingStore();
   const { userTrophies } = useGamificationStore();
+
+  const [editModalVisible, setEditModalVisible] = useState(false);
+  const [editName, setEditName] = useState("");
+  const [editSaving, setEditSaving] = useState(false);
 
   const booksCompleted = userBooks.filter(
     (b) => b.status === "completed",
@@ -682,6 +694,20 @@ export default function ProfileScreen() {
   const xp = profile?.xp ?? 0;
   const userLevel = profile?.level ?? 1;
 
+  const handleEditSave = async () => {
+    const trimmed = editName.trim();
+    if (!trimmed || !user?.id) return;
+    setEditSaving(true);
+    try {
+      await updateProfile(user.id, { name: trimmed });
+      setEditModalVisible(false);
+    } catch {
+      Alert.alert("Error", "No se pudo actualizar el perfil.");
+    } finally {
+      setEditSaving(false);
+    }
+  };
+
   if (loading) return null;
 
   if (newTrophy) {
@@ -691,7 +717,7 @@ export default function ProfileScreen() {
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: BG }}>
+    <View style={{ flex: 1, backgroundColor: colors.bg }}>
       <ScrollView
         contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 16, paddingBottom: 16 }}
         showsVerticalScrollIndicator={false}
@@ -719,30 +745,47 @@ export default function ProfileScreen() {
 
           <Avatar name={name} />
 
-          <Text
-            style={{
-              fontSize: 28,
-              fontWeight: "900",
-              color: "#1C1C1E",
-              marginBottom: 8,
-            }}
-          >
-            {name}
-          </Text>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 8 }}>
+            <Text
+              style={{
+                fontSize: 28,
+                fontWeight: "900",
+                color: "#1C1C1E",
+              }}
+            >
+              {name}
+            </Text>
+            <TouchableOpacity
+              onPress={() => {
+                setEditName(name);
+                setEditModalVisible(true);
+              }}
+              style={{
+                width: 32,
+                height: 32,
+                borderRadius: 16,
+                backgroundColor: colors.primaryBg,
+                justifyContent: "center",
+                alignItems: "center",
+              }}
+            >
+              <Ionicons name="pencil" size={15} color={colors.primary} />
+            </TouchableOpacity>
+          </View>
 
           <View
             style={{
               flexDirection: "row",
               alignItems: "center",
               gap: 6,
-              backgroundColor: TEAL_LIGHT,
+              backgroundColor: colors.primaryBg,
               borderRadius: 20,
               paddingHorizontal: 14,
               paddingVertical: 6,
             }}
           >
             <Text style={{ fontSize: 14 }}>📖</Text>
-            <Text style={{ fontSize: 13, fontWeight: "700", color: TEAL }}>
+            <Text style={{ fontSize: 13, fontWeight: "700", color: colors.primary }}>
               Nivel: <Text style={{ fontWeight: "900" }}>{userLevel}</Text>
             </Text>
           </View>
@@ -751,6 +794,79 @@ export default function ProfileScreen() {
             <ProgressPath xp={xp} />
           </View>
         </View>
+
+        {/* Edit Modal */}
+        <Modal
+          visible={editModalVisible}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setEditModalVisible(false)}
+        >
+          <Pressable
+            style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.4)", justifyContent: "center", padding: 32 }}
+            onPress={() => setEditModalVisible(false)}
+          >
+            <Pressable
+              onPress={() => {}}
+              style={{
+                backgroundColor: "#fff",
+                borderRadius: 20,
+                padding: 24,
+              }}
+            >
+              <Text style={{ fontSize: 18, fontWeight: "800", color: colors.text, marginBottom: 16 }}>
+                Editar nombre
+              </Text>
+              <TextInput
+                value={editName}
+                onChangeText={setEditName}
+                placeholder="Tu nombre"
+                placeholderTextColor={colors.textVeryMuted}
+                style={{
+                  backgroundColor: colors.bg,
+                  borderRadius: 12,
+                  paddingHorizontal: 16,
+                  paddingVertical: 14,
+                  fontSize: 15,
+                  color: colors.text,
+                }}
+                autoFocus
+              />
+              <View style={{ flexDirection: "row", gap: 12, marginTop: 20 }}>
+                <TouchableOpacity
+                  onPress={() => setEditModalVisible(false)}
+                  style={{
+                    flex: 1,
+                    borderRadius: 12,
+                    paddingVertical: 14,
+                    alignItems: "center",
+                    backgroundColor: colors.border,
+                  }}
+                >
+                  <Text style={{ fontWeight: "700", color: colors.textSecondary }}>Cancelar</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={handleEditSave}
+                  disabled={editSaving || !editName.trim()}
+                  style={{
+                    flex: 1,
+                    borderRadius: 12,
+                    paddingVertical: 14,
+                    alignItems: "center",
+                    backgroundColor: colors.primary,
+                    opacity: editSaving || !editName.trim() ? 0.5 : 1,
+                  }}
+                >
+                  {editSaving ? (
+                    <ActivityIndicator color="#fff" size="small" />
+                  ) : (
+                    <Text style={{ fontWeight: "700", color: "#fff" }}>Guardar</Text>
+                  )}
+                </TouchableOpacity>
+              </View>
+            </Pressable>
+          </Pressable>
+        </Modal>
 
         {/* Stats grid */}
         <View style={{ flexDirection: "row", gap: 10, marginBottom: 16 }}>

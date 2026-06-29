@@ -40,6 +40,7 @@ type BookFilters = {
   tagId?: string | null;
   categoryIds?: string[];
   search?: string;
+  limit?: number;
 };
 
 type BookStore = {

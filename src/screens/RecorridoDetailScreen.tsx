@@ -1,3 +1,4 @@
+import { colors, shadows } from "@/src/theme";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useState } from "react";
 import { Image, RefreshControl, ScrollView, Text, TouchableOpacity, View } from "react-native";
@@ -5,19 +6,16 @@ import { useAuthStore } from "@/src/store/authStore";
 import { useRecorridoStore } from "@/src/store/recorridoStore";
 import { startRecorrido, updateRecorridoProgress, difficultyLabel, type RecorridoBook } from "@/src/services/recorridos";
 
-const TEAL = "#078F83";
-const TEAL_LIGHT = "#E1F5EE";
-
 const STATUS_CONFIG: Record<string, { label: string; bg: string; text: string; icon: string }> = {
-  locked: { label: "Bloqueado", bg: "#F1F5F9", text: "#94A3B8", icon: "🔒" },
-  new: { label: "Disponible", bg: "#E8F5F3", text: TEAL, icon: "📖" },
-  reading: { label: "Leyendo", bg: "#EFF6FF", text: "#3B82F6", icon: "📖" },
-  paused: { label: "Pausado", bg: "#FEF9C3", text: "#CA8A04", icon: "⏸" },
-  completed: { label: "Completado", bg: "#F0FDF4", text: "#16A34A", icon: "✅" },
+  locked: { label: "Bloqueado", bg: "#F1F5F9", text: colors.textMuted, icon: "🔒" },
+  new: { label: "Disponible", bg: colors.primaryBg, text: colors.primary, icon: "📖" },
+  reading: { label: "Leyendo", bg: colors.readingBg, text: colors.reading, icon: "📖" },
+  paused: { label: "Pausado", bg: colors.warningBg, text: "#CA8A04", icon: "⏸" },
+  completed: { label: "Completado", bg: colors.successBg, text: colors.success, icon: "✅" },
 };
 
 const COLORS = [
-  "#078F83", "#6366F1", "#E11D48", "#D97706",
+  colors.primary, "#6366F1", "#E11D48", "#D97706",
   "#7C3AED", "#0891B2", "#059669", "#DB2777",
 ];
 
@@ -78,16 +76,16 @@ export function RecorridoDetailScreen({ recorridoId }: RecorridoDetailScreenProp
 
   if (isLoading && !selectedRecorrido) {
     return (
-      <View style={{ flex: 1, backgroundColor: "#F7FAFC", justifyContent: "center", alignItems: "center" }}>
-        <Text style={{ color: "#94A3B8" }}>Cargando recorrido...</Text>
+      <View style={{ flex: 1, backgroundColor: colors.bg, justifyContent: "center", alignItems: "center" }}>
+        <Text style={{ color: colors.textMuted }}>Cargando recorrido...</Text>
       </View>
     );
   }
 
   if (!selectedRecorrido) {
     return (
-      <View style={{ flex: 1, backgroundColor: "#F7FAFC", justifyContent: "center", alignItems: "center" }}>
-        <Text style={{ color: "#DC2626" }}>Recorrido no encontrado</Text>
+      <View style={{ flex: 1, backgroundColor: colors.bg, justifyContent: "center", alignItems: "center" }}>
+        <Text style={{ color: colors.error }}>Recorrido no encontrado</Text>
       </View>
     );
   }
@@ -96,11 +94,11 @@ export function RecorridoDetailScreen({ recorridoId }: RecorridoDetailScreenProp
   const bgColor = COLORS[recorrido.difficulty % COLORS.length];
 
   return (
-    <View style={{ flex: 1, backgroundColor: "#F7FAFC" }}>
+    <View style={{ flex: 1, backgroundColor: colors.bg }}>
       <ScrollView
         contentContainerStyle={{ paddingBottom: 40 }}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={TEAL} />
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />
         }
       >
         {/* Hero cover section */}
@@ -180,7 +178,7 @@ export function RecorridoDetailScreen({ recorridoId }: RecorridoDetailScreenProp
               left: 0,
               right: 0,
               height: 48,
-              backgroundColor: "#F7FAFC",
+              backgroundColor: colors.bg,
               borderTopLeftRadius: 28,
               borderTopRightRadius: 28,
             }}
@@ -192,14 +190,14 @@ export function RecorridoDetailScreen({ recorridoId }: RecorridoDetailScreenProp
           <View style={{ paddingHorizontal: 16, marginTop: 12 }}>
             <View
               style={{
-                backgroundColor: "#F0FDF4",
+                backgroundColor: colors.successBg,
                 borderRadius: 16,
                 padding: 16,
                 flexDirection: "row",
                 alignItems: "center",
                 gap: 12,
                 borderLeftWidth: 4,
-                borderLeftColor: "#16A34A",
+                borderLeftColor: colors.success,
               }}
             >
               <Text style={{ fontSize: 28 }}>🏆</Text>
@@ -207,7 +205,7 @@ export function RecorridoDetailScreen({ recorridoId }: RecorridoDetailScreenProp
                 <Text style={{ fontSize: 15, fontWeight: "700", color: "#166534" }}>
                   Recorrido completado
                 </Text>
-                <Text style={{ fontSize: 12, color: "#16A34A", marginTop: 2 }}>
+                <Text style={{ fontSize: 12, color: colors.success, marginTop: 2 }}>
                   {recorrido.completedBooks} de {recorrido.totalBooks} libros • {recorrido.xpReward} XP ganados
                 </Text>
               </View>
@@ -219,24 +217,20 @@ export function RecorridoDetailScreen({ recorridoId }: RecorridoDetailScreenProp
           <View style={{ paddingHorizontal: 16, marginTop: 12 }}>
             <View
               style={{
-                backgroundColor: "#fff",
+                backgroundColor: colors.white,
                 borderRadius: 16,
                 padding: 16,
-                shadowColor: "#000",
-                shadowOpacity: 0.04,
-                shadowRadius: 8,
-                shadowOffset: { width: 0, height: 2 },
-                elevation: 2,
+                ...shadows.card,
               }}
             >
               <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 8 }}>
-                <Text style={{ fontSize: 13, fontWeight: "600", color: "#0F172A" }}>Progreso</Text>
-                <Text style={{ fontSize: 13, fontWeight: "700", color: TEAL }}>{recorrido.progress}%</Text>
+                <Text style={{ fontSize: 13, fontWeight: "600", color: colors.text }}>Progreso</Text>
+                <Text style={{ fontSize: 13, fontWeight: "700", color: colors.primary }}>{recorrido.progress}%</Text>
               </View>
               <View style={{ height: 8, backgroundColor: "#F1F5F9", borderRadius: 4, overflow: "hidden" }}>
-                <View style={{ height: 8, borderRadius: 4, backgroundColor: TEAL, width: `${recorrido.progress}%` }} />
+                <View style={{ height: 8, borderRadius: 4, backgroundColor: colors.primary, width: `${recorrido.progress}%` }} />
               </View>
-              <Text style={{ fontSize: 12, color: "#64748B", marginTop: 8 }}>
+              <Text style={{ fontSize: 12, color: colors.textSecondary, marginTop: 8 }}>
                 {recorrido.completedBooks} de {recorrido.totalBooks} libros completados
               </Text>
             </View>
@@ -249,12 +243,12 @@ export function RecorridoDetailScreen({ recorridoId }: RecorridoDetailScreenProp
               onPress={handleStartRecorrido}
               disabled={updating}
               style={{
-                backgroundColor: TEAL,
+                backgroundColor: colors.primary,
                 borderRadius: 16,
                 paddingVertical: 16,
                 alignItems: "center",
                 opacity: updating ? 0.6 : 1,
-                shadowColor: TEAL,
+                shadowColor: colors.primary,
                 shadowOpacity: 0.3,
                 shadowRadius: 12,
                 shadowOffset: { width: 0, height: 6 },
@@ -271,8 +265,8 @@ export function RecorridoDetailScreen({ recorridoId }: RecorridoDetailScreenProp
         {/* Book list */}
         <View style={{ paddingHorizontal: 16, marginTop: 24 }}>
           <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 16 }}>
-            <View style={{ width: 3, height: 16, borderRadius: 2, backgroundColor: TEAL }} />
-            <Text style={{ fontSize: 17, fontWeight: "700", color: "#0F172A" }}>
+            <View style={{ width: 3, height: 16, borderRadius: 2, backgroundColor: colors.primary }} />
+            <Text style={{ fontSize: 17, fontWeight: "700", color: colors.text }}>
               Ruta de aprendizaje
             </Text>
           </View>
@@ -305,10 +299,10 @@ export function RecorridoDetailScreen({ recorridoId }: RecorridoDetailScreenProp
                         borderRadius: 18,
                         backgroundColor:
                           book.status === "completed"
-                            ? "#16A34A"
+                            ? colors.success
                             : unlocked
-                              ? TEAL
-                              : "#E2E8F0",
+                              ? colors.primary
+                              : colors.border,
                         justifyContent: "center",
                         alignItems: "center",
                         zIndex: 1,
@@ -325,7 +319,7 @@ export function RecorridoDetailScreen({ recorridoId }: RecorridoDetailScreenProp
                           flex: 1,
                           minHeight: 20,
                           backgroundColor:
-                            book.status === "completed" ? "#16A34A" : "#E2E8F0",
+                            book.status === "completed" ? colors.success : colors.border,
                         }}
                       />
                     )}
@@ -335,29 +329,25 @@ export function RecorridoDetailScreen({ recorridoId }: RecorridoDetailScreenProp
                   <View
                     style={{
                       flex: 1,
-                      backgroundColor: "#fff",
+                      backgroundColor: colors.white,
                       borderRadius: 16,
                       padding: 14,
                       marginBottom: 12,
-                      shadowColor: "#000",
-                      shadowOpacity: 0.04,
-                      shadowRadius: 8,
-                      shadowOffset: { width: 0, height: 2 },
-                      elevation: 2,
+                      ...shadows.card,
                       borderLeftWidth: 3,
                       borderLeftColor:
                         book.status === "completed"
-                          ? "#16A34A"
+                          ? colors.success
                           : unlocked
-                            ? TEAL
-                            : "#E2E8F0",
+                            ? colors.primary
+                            : colors.border,
                     }}
                   >
                     <View style={{ flexDirection: "row", gap: 12 }}>
                       <CoverPlaceholder title={book.title} difficulty={book.difficulty} />
                       <View style={{ flex: 1, gap: 4 }}>
                         <Text
-                          style={{ fontWeight: "700", fontSize: 15, color: "#0F172A" }}
+                          style={{ fontWeight: "700", fontSize: 15, color: colors.text }}
                           numberOfLines={1}
                         >
                           {book.title}
@@ -384,15 +374,15 @@ export function RecorridoDetailScreen({ recorridoId }: RecorridoDetailScreenProp
                         )}
 
                         <View style={{ flexDirection: "row", gap: 8, marginTop: 2 }}>
-                          <Text style={{ fontSize: 10, color: "#94A3B8" }}>
-                            📄 {book.totalPages ?? "-"} pág
-                          </Text>
-                          <Text style={{ fontSize: 10, color: "#94A3B8" }}>
-                            ⏱ {book.estimatedMinutes ?? "-"} min
-                          </Text>
-                          <Text style={{ fontSize: 10, color: "#94A3B8" }}>
-                            ⭐ {book.xp} XP
-                          </Text>
+                            <Text style={{ fontSize: 10, color: colors.textMuted }}>
+                              📄 {book.totalPages ?? "-"} pág
+                            </Text>
+                            <Text style={{ fontSize: 10, color: colors.textMuted }}>
+                              ⏱ {book.estimatedMinutes ?? "-"} min
+                            </Text>
+                            <Text style={{ fontSize: 10, color: colors.textMuted }}>
+                              ⭐ {book.xp} XP
+                            </Text>
                         </View>
 
                         {!unlocked && (
@@ -409,7 +399,7 @@ export function RecorridoDetailScreen({ recorridoId }: RecorridoDetailScreenProp
                               marginTop: 4,
                             }}
                           >
-                            <Text style={{ fontSize: 10, color: "#64748B", fontWeight: "500" }}>
+                            <Text style={{ fontSize: 10, color: colors.textSecondary, fontWeight: "500" }}>
                               Completa "{recorrido.books[index - 1]?.title}" primero
                             </Text>
                           </View>
@@ -418,7 +408,7 @@ export function RecorridoDetailScreen({ recorridoId }: RecorridoDetailScreenProp
                         {unlocked && book.status === "new" && (
                           <View
                             style={{
-                              backgroundColor: TEAL_LIGHT,
+                              backgroundColor: colors.primaryBg,
                               borderRadius: 6,
                               paddingHorizontal: 8,
                               paddingVertical: 4,
@@ -426,7 +416,7 @@ export function RecorridoDetailScreen({ recorridoId }: RecorridoDetailScreenProp
                               marginTop: 4,
                             }}
                           >
-                            <Text style={{ fontSize: 10, color: TEAL, fontWeight: "600" }}>
+                            <Text style={{ fontSize: 10, color: colors.primary, fontWeight: "600" }}>
                               Disponible
                             </Text>
                           </View>
@@ -473,18 +463,7 @@ function isBookUnlocked(index: number, books: RecorridoBook[]): boolean {
 }
 
 function CoverPlaceholder({ title, difficulty }: { title: string; difficulty: number }) {
-  const COVER_COLORS = [
-    ["#078F83", "#056860"],
-    ["#6366F1", "#4F46E5"],
-    ["#E11D48", "#BE123C"],
-    ["#D97706", "#B45309"],
-    ["#7C3AED", "#6D28D9"],
-    ["#0891B2", "#0E7490"],
-    ["#059669", "#047857"],
-    ["#DB2777", "#BE185D"],
-  ];
-
-  const [top, bottom] = COVER_COLORS[difficulty % COVER_COLORS.length];
+  const [top, bottom] = colors.coverColors[difficulty % colors.coverColors.length];
   const initial = title.charAt(0).toUpperCase();
 
   return (

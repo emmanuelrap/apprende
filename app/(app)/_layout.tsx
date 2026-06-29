@@ -1,4 +1,3 @@
-import { AppBar } from "@/src/components/AppBar";
 import { BottomNav } from "@/src/components/BottomNavs";
 import { useAuthStore } from "@/src/store/authStore";
 import { usePrefsStore } from "@/src/store/prefsStore";
@@ -25,14 +24,9 @@ export default function Layout() {
 
   return (
     <SafeAreaView edges={["top"]} style={{ flex: 1 }}>
-      <View style={{ zIndex: 2000, elevation: 2000 }}>
-        <AppBar />
-      </View>
-
       <View style={{ flex: 1, zIndex: 1, elevation: 1 }}>
         <Slot />
       </View>
-
       <BottomNav />
     </SafeAreaView>
   );

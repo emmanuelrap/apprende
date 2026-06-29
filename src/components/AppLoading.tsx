@@ -1,3 +1,4 @@
+import { colors } from "@/src/theme";
 import { useEffect, useRef } from "react";
 import { Animated, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -23,12 +24,12 @@ export function AppLoading() {
   }, []);
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: "#F7FAFC", justifyContent: "center", alignItems: "center" }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg, justifyContent: "center", alignItems: "center" }}>
       <Animated.Text style={{ fontSize: 64, opacity: pulseAnim }}>📖</Animated.Text>
-      <Text style={{ fontSize: 18, fontWeight: "700", color: "#0F172A", marginTop: 20 }}>
+      <Text style={{ fontSize: 18, fontWeight: "700", color: colors.text, marginTop: 20 }}>
         Cargando tus datos
       </Text>
-      <Animated.Text style={{ fontSize: 13, color: "#64748B", marginTop: 8, opacity: fadeAnim }}>
+      <Animated.Text style={{ fontSize: 13, color: colors.textSecondary, marginTop: 8, opacity: fadeAnim }}>
         Estamos preparando todo para ti...
       </Animated.Text>
     </SafeAreaView>

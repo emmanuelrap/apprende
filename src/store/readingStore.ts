@@ -29,7 +29,7 @@ type ReaderInit = {
 type ReadingStore = {
   userBooks: UserBook[];
   currentPage: number;
-  currentContent: { es: string; en: string } | null;
+  currentContent: { es: string; en: string; fr: string } | null;
   isLoading: boolean;
   sessions: ReadingSession[];
 
@@ -65,8 +65,7 @@ type ReadingStore = {
     pageNumber: number;
     contentEs: string;
     contentEn: string;
-    audioEs: string | null;
-    audioEn: string | null;
+    contentFr: string;
   } | null>;
   reset: () => void;
 };
@@ -120,7 +119,8 @@ export const useReadingStore = create<ReadingStore>((set) => ({
 
       const es = content?.find((c) => c.language === "es")?.content ?? "";
       const en = content?.find((c) => c.language === "en")?.content ?? "";
-      set({ currentContent: { es, en }, currentPage: pageNumber });
+      const fr = content?.find((c) => c.language === "fr")?.content ?? "";
+      set({ currentContent: { es, en, fr }, currentPage: pageNumber });
     } finally {
       set({ isLoading: false });
     }
@@ -166,6 +166,20 @@ export const useReadingStore = create<ReadingStore>((set) => ({
       bookTitle: book?.title ?? "",
       xpBefore: profile?.xp ?? 0,
     };
+  },
+
+  getBookLanguages: async (bookId: string) => {
+    const { data: pages } = await supabase
+      .from("book_pages")
+      .select("id")
+      .eq("book_id", bookId);
+    if (!pages || pages.length === 0) return [];
+    const { data } = await supabase
+      .from("page_content")
+      .select("language")
+      .in("page_id", pages.map((p) => p.id));
+    if (!data) return [];
+    return [...new Set(data.map((d) => d.language))] as string[];
   },
 
   saveProgress: async (userId, bookId, pageNumber, totalPages) => {
@@ -219,7 +233,7 @@ export const useReadingStore = create<ReadingStore>((set) => ({
   getPage: async (bookId, pageNumber) => {
     const { data, error } = await supabase
       .from("book_pages")
-      .select(`id, page_number, page_content (content, language, audio_url)`)
+      .select(`id, page_number, page_content (content, language)`)
       .eq("book_id", bookId)
       .eq("page_number", pageNumber)
       .single();
@@ -230,16 +244,12 @@ export const useReadingStore = create<ReadingStore>((set) => ({
       (data.page_content as any[])?.find((c) => c.language === lang)?.content ??
       "";
 
-    const getAudio = (lang: string) =>
-      (data.page_content as any[])?.find((c) => c.language === lang)?.audio_url ?? null;
-
     return {
       id: data.id,
       pageNumber: data.page_number,
       contentEs: getContent("es"),
       contentEn: getContent("en"),
-      audioEs: getAudio("es"),
-      audioEn: getAudio("en"),
+      contentFr: getContent("fr"),
     };
   },
 

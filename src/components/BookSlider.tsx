@@ -1,5 +1,5 @@
 import { useRouter } from "expo-router";
-import { useCallback, useState } from "react";
+import { useCallback } from "react";
 import {
   FlatList,
   Image,
@@ -8,45 +8,100 @@ import {
   View,
 } from "react-native";
 import { toggleFavorite } from "@/src/services/favorites";
+import { colors } from "@/src/theme";
 
 type Book = {
   id: string;
   title: string;
   cover: string | null;
   difficulty: number;
+  progress: number;
+  status: string;
 };
 
-const TEAL = "#078F83";
-const TEAL_LIGHT = "#E1F5EE";
-
-const COVER_COLORS = [
-  ["#078F83", "#056860"],
-  ["#6366F1", "#4F46E5"],
-  ["#E11D48", "#BE123C"],
-  ["#D97706", "#B45309"],
-  ["#7C3AED", "#6D28D9"],
-  ["#0891B2", "#0E7490"],
-  ["#059669", "#047857"],
-  ["#DB2777", "#BE185D"],
-];
+function ProgressBar({ progress }: { progress: number }) {
+  const pct = Math.min(progress, 100);
+  return (
+    <View
+      style={{
+        height: 4, borderRadius: 2,
+        backgroundColor: "rgba(255,255,255,0.2)",
+        marginTop: 4, overflow: "hidden",
+      }}
+    >
+      <View
+        style={{
+          width: `${pct}%` as unknown as number,
+          height: 4, borderRadius: 2,
+          backgroundColor: "#fff",
+        }}
+      />
+    </View>
+  );
+}
 
 function CoverImage({ book, index }: { book: Book; index: number }) {
+  const isCompleted = book.status === "completed";
+
   if (book.cover) {
     return (
-      <Image
-        source={{ uri: book.cover }}
-        style={{ width: 120, height: 160, borderRadius: 12 }}
-        resizeMode="cover"
-      />
+      <View style={{ width: 120, height: 160, borderRadius: 12, overflow: "hidden" }}>
+        <Image
+          source={{ uri: book.cover }}
+          style={{ width: "100%", height: "100%" }}
+          resizeMode="cover"
+        />
+        {isCompleted && (
+          <View
+            style={{
+              position: "absolute", top: 6, left: 6,
+              backgroundColor: colors.success + "E0",
+              paddingHorizontal: 6, paddingVertical: 2,
+              borderRadius: 100,
+            }}
+          >
+            <Text style={{ fontSize: 9, fontWeight: "700", color: "#fff" }}>Leído</Text>
+          </View>
+        )}
+        {!isCompleted && book.status === "reading" && (
+          <View
+            style={{
+              position: "absolute", top: 6, left: 6,
+              backgroundColor: colors.reading + "E0",
+              paddingHorizontal: 6, paddingVertical: 2,
+              borderRadius: 100,
+            }}
+          >
+            <Text style={{ fontSize: 9, fontWeight: "700", color: "#fff" }}>Leyendo</Text>
+          </View>
+        )}
+        {isCompleted && (
+          <View
+            style={{
+              position: "absolute", bottom: 6, right: 6,
+              width: 22, height: 22, borderRadius: 11,
+              backgroundColor: colors.success,
+              justifyContent: "center", alignItems: "center",
+            }}
+          >
+            <Text style={{ fontSize: 12, color: "#fff", fontWeight: "800" }}>✓</Text>
+          </View>
+        )}
+        {!isCompleted && book.progress > 0 && (
+          <View style={{ position: "absolute", bottom: 8, left: 8, right: 8 }}>
+            <ProgressBar progress={book.progress} />
+          </View>
+        )}
+      </View>
     );
   }
 
-  const colors = COVER_COLORS[index % COVER_COLORS.length];
+  const coverColors = colors.coverColors[index % colors.coverColors.length];
   return (
     <View
       style={{
         width: 120, height: 160, borderRadius: 12,
-        backgroundColor: colors[0],
+        backgroundColor: coverColors[0],
         justifyContent: "center", alignItems: "center",
         padding: 8,
       }}
@@ -61,6 +116,47 @@ function CoverImage({ book, index }: { book: Book; index: number }) {
       >
         {book.title}
       </Text>
+      {isCompleted && (
+        <View
+          style={{
+            position: "absolute", top: 6, left: 6,
+            backgroundColor: colors.success + "E0",
+            paddingHorizontal: 6, paddingVertical: 2,
+            borderRadius: 100,
+          }}
+        >
+          <Text style={{ fontSize: 9, fontWeight: "700", color: "#fff" }}>Leído</Text>
+        </View>
+      )}
+      {!isCompleted && book.status === "reading" && (
+        <View
+          style={{
+            position: "absolute", top: 6, left: 6,
+            backgroundColor: colors.reading + "E0",
+            paddingHorizontal: 6, paddingVertical: 2,
+            borderRadius: 100,
+          }}
+        >
+          <Text style={{ fontSize: 9, fontWeight: "700", color: "#fff" }}>Leyendo</Text>
+        </View>
+      )}
+      {isCompleted && (
+        <View
+          style={{
+            position: "absolute", bottom: 6, right: 6,
+            width: 22, height: 22, borderRadius: 11,
+            backgroundColor: colors.success,
+            justifyContent: "center", alignItems: "center",
+          }}
+        >
+          <Text style={{ fontSize: 12, color: "#fff", fontWeight: "800" }}>✓</Text>
+        </View>
+      )}
+      {!isCompleted && book.progress > 0 && (
+        <View style={{ position: "absolute", bottom: 8, left: 8, right: 8 }}>
+          <ProgressBar progress={book.progress} />
+        </View>
+      )}
     </View>
   );
 }
@@ -70,9 +166,10 @@ type Props = {
   favoriteIds: Set<string>;
   userId: string;
   onToggleFavorite: (bookId: string) => void;
+  onSeeAll?: () => void;
 };
 
-export function BookSlider({ books, favoriteIds, userId, onToggleFavorite }: Props) {
+export function BookSlider({ books, favoriteIds, userId, onToggleFavorite, onSeeAll }: Props) {
   const router = useRouter();
 
   const handleFavorite = useCallback(
@@ -91,6 +188,42 @@ export function BookSlider({ books, favoriteIds, userId, onToggleFavorite }: Pro
       showsHorizontalScrollIndicator={false}
       contentContainerStyle={{ paddingHorizontal: 16, gap: 12, paddingVertical: 8 }}
       keyExtractor={(item) => item.id}
+      ListFooterComponent={
+        onSeeAll ? (
+          <TouchableOpacity
+            onPress={onSeeAll}
+            activeOpacity={0.7}
+            style={{
+              width: 100,
+              height: 160,
+              borderRadius: 16,
+              backgroundColor: colors.primary + "0A",
+              justifyContent: "center",
+              alignItems: "center",
+              alignSelf: "center",
+            }}
+          >
+            <View
+              style={{
+                width: 44,
+                height: 44,
+                borderRadius: 22,
+                backgroundColor: colors.primary + "18",
+                justifyContent: "center",
+                alignItems: "center",
+                marginBottom: 8,
+              }}
+            >
+              <Text style={{ fontSize: 18, color: colors.primary, fontWeight: "700" }}>
+                →
+              </Text>
+            </View>
+            <Text style={{ fontSize: 13, fontWeight: "600", color: colors.primary }}>
+              Ver más
+            </Text>
+          </TouchableOpacity>
+        ) : null
+      }
       renderItem={({ item, index }) => {
         const isFav = favoriteIds.has(item.id);
         return (
@@ -102,7 +235,7 @@ export function BookSlider({ books, favoriteIds, userId, onToggleFavorite }: Pro
             <CoverImage book={item} index={index} />
             <Text
               style={{
-                fontSize: 11, fontWeight: "600", color: "#0F172A",
+                fontSize: 11, fontWeight: "600",         color: colors.text,
                 marginTop: 6, lineHeight: 14,
               }}
               numberOfLines={2}

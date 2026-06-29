@@ -1,3 +1,4 @@
+import { colors } from "@/src/theme";
 import { ScrollView, Text, TouchableOpacity } from "react-native";
 
 type SingleProps = {
@@ -52,55 +53,62 @@ export function ChipSelector({ chips, showAll = true, ...props }: Props) {
     <ScrollView
       horizontal
       showsHorizontalScrollIndicator={false}
-      className="mb-4"
-      contentContainerStyle={{ gap: 8, paddingHorizontal: 2 }}
+      contentContainerStyle={{ gap: 8, paddingVertical: 4 }}
     >
-      {/* Todos */}
       {showAll && (
-        <TouchableOpacity
+        <ChipButton
+          label="Todos"
+          active={allSelected}
           onPress={handleAll}
-          className={`px-4 py-1.5 rounded-full border ${
-            allSelected
-              ? "bg-indigo-500 border-indigo-500"
-              : "bg-white border-slate-200"
-          }`}
-        >
-          <Text
-            className={
-              allSelected
-                ? "text-white text-sm font-medium"
-                : "text-slate-500 text-sm"
-            }
-          >
-            Todos
-          </Text>
-        </TouchableOpacity>
+        />
       )}
 
       {chips.map((chip) => {
         const active = isSelected(chip.id);
         return (
-          <TouchableOpacity
+          <ChipButton
             key={chip.id}
+            label={chip.name}
+            active={active}
             onPress={() => handlePress(chip.id)}
-            className={`px-4 py-1.5 rounded-full border ${
-              active
-                ? "bg-indigo-500 border-indigo-500"
-                : "bg-white border-slate-200"
-            }`}
-          >
-            <Text
-              className={
-                active
-                  ? "text-white text-sm font-medium"
-                  : "text-slate-500 text-sm"
-              }
-            >
-              {chip.name}
-            </Text>
-          </TouchableOpacity>
+          />
         );
       })}
     </ScrollView>
+  );
+}
+
+function ChipButton({
+  label,
+  active,
+  onPress,
+}: {
+  label: string;
+  active: boolean;
+  onPress: () => void;
+}) {
+  return (
+    <TouchableOpacity
+      onPress={onPress}
+      activeOpacity={0.75}
+      style={{
+        paddingHorizontal: 16,
+        paddingVertical: 7,
+        borderRadius: 20,
+        backgroundColor: active ? colors.primary : colors.white,
+        borderWidth: 1,
+        borderColor: active ? colors.primary : colors.border,
+      }}
+    >
+      <Text
+        style={{
+          fontSize: 13,
+          fontWeight: "600",
+          color: active ? colors.white : colors.textSecondary,
+        }}
+      >
+        {label}
+      </Text>
+    </TouchableOpacity>
   );
 }

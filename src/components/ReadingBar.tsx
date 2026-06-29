@@ -1,4 +1,4 @@
-import { THEME_COLORS } from "@/src/theme";
+import { colors, THEME_COLORS } from "@/src/theme";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import { Modal, Pressable, ScrollView, Text, TouchableOpacity, View } from "react-native";
@@ -6,6 +6,7 @@ import { Modal, Pressable, ScrollView, Text, TouchableOpacity, View } from "reac
 const LANGUAGES = [
   { label: "English", value: "en" },
   { label: "Español", value: "es" },
+  { label: "Français", value: "fr" },
 ];
 
 const FONT_SIZES = [14, 16, 18, 20, 22, 24];
@@ -28,6 +29,10 @@ const THEMES: { key: Theme; label: string; emoji: string; desc: string }[] = [
   { key: "dark", label: "Oscuro", emoji: "🌙", desc: "Oscuro" },
 ];
 
+const LANG_LABELS: Record<string, string> = {
+  es: "ES", en: "EN", fr: "FR", pt: "PT",
+};
+
 type Props = {
   title: string;
   currentPage: number;
@@ -36,6 +41,7 @@ type Props = {
   langBottom: string;
   onLangTopChange: (lang: string) => void;
   onLangBottomChange: (lang: string) => void;
+  availableLangs: string[];
   fontSize: number;
   onFontSizeChange: (size: number) => void;
   theme: Theme;
@@ -50,6 +56,8 @@ type Props = {
   onSideMarginChange: (v: number) => void;
   fontFamily: string | undefined;
   onFontFamilyChange: (v: string | undefined) => void;
+  textAlign: "left" | "center" | "right" | "justify";
+  onTextAlignChange: (v: "left" | "center" | "right" | "justify") => void;
 };
 
 function LangDropdown({
@@ -65,7 +73,7 @@ function LangDropdown({
 
   return (
     <View style={{ alignItems: "center", gap: 2 }}>
-      <Text style={{ fontSize: 9, color: "#94A3B8", fontWeight: "500" }}>
+      <Text style={{ fontSize: 9, color: colors.textMuted, fontWeight: "500" }}>
         {label}
       </Text>
       <TouchableOpacity
@@ -74,7 +82,7 @@ function LangDropdown({
           paddingHorizontal: 10,
           paddingVertical: 4,
           borderRadius: 6,
-          backgroundColor: "#E2E8F0",
+          backgroundColor: colors.border,
         }}
       >
         <Text style={{ fontSize: 13, fontWeight: "600" }}>
@@ -115,14 +123,14 @@ function LangDropdown({
                   paddingHorizontal: 20,
                   paddingVertical: 14,
                   backgroundColor:
-                    value === lang.value ? "#E8F5F3" : "transparent",
+                    value === lang.value ? colors.primaryBg : "transparent",
                 }}
               >
                 <Text
                   style={{
                     fontSize: 16,
                     fontWeight: value === lang.value ? "700" : "400",
-                    color: value === lang.value ? "#1A7A6E" : "#1C1C1E",
+                    color: value === lang.value ? colors.primary : colors.text,
                     textAlign: "center",
                   }}
                 >
@@ -145,6 +153,7 @@ export function ReadingBar({
   langBottom,
   onLangTopChange,
   onLangBottomChange,
+  availableLangs,
   fontSize,
   onFontSizeChange,
   theme,
@@ -159,9 +168,12 @@ export function ReadingBar({
   onSideMarginChange,
   fontFamily,
   onFontFamilyChange,
+  textAlign,
+  onTextAlignChange,
 }: Props) {
   const router = useRouter();
   const [openSettings, setOpenSettings] = useState(false);
+  const [langPickerOpen, setLangPickerOpen] = useState(false);
   const progress =
     totalPages > 0 ? Math.round((currentPage / totalPages) * 100) : 0;
 
@@ -172,13 +184,24 @@ export function ReadingBar({
         style={{
           flexDirection: "row",
           alignItems: "center",
-          paddingHorizontal: 16,
-          paddingVertical: 8,
+          paddingHorizontal: 12,
+          paddingVertical: 10,
           gap: 8,
         }}
       >
-        <TouchableOpacity onPress={() => router.back()}>
-          <Text style={{ fontSize: 20, color: THEME_COLORS[theme].text }}>←</Text>
+        <TouchableOpacity
+          onPress={() => router.back()}
+          activeOpacity={0.6}
+          style={{
+            width: 36,
+            height: 36,
+            borderRadius: 18,
+            backgroundColor: colors.border,
+            justifyContent: "center",
+            alignItems: "center",
+          }}
+        >
+          <Text style={{ fontSize: 20, color: colors.text, lineHeight: 22, fontWeight: "300" }}>‹</Text>
         </TouchableOpacity>
 
         <Text
@@ -188,20 +211,115 @@ export function ReadingBar({
           {title}
         </Text>
 
-        <Text style={{ fontSize: 12, color: "#94A3B8", marginRight: 8 }}>
+        {/* Language picker */}
+        <View>
+          <TouchableOpacity
+            onPress={() => setLangPickerOpen(true)}
+            activeOpacity={0.6}
+            style={{
+              paddingHorizontal: 8,
+              paddingVertical: 4,
+              borderRadius: 6,
+              backgroundColor: colors.primaryBg,
+              marginRight: 4,
+            }}
+          >
+            <Text style={{ fontSize: 12, fontWeight: "700", color: colors.primaryDarkest }}>
+              {LANG_LABELS[langTop] ?? langTop.toUpperCase()}
+            </Text>
+          </TouchableOpacity>
+
+          <Modal visible={langPickerOpen} transparent animationType="fade">
+            <Pressable
+              style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.3)", justifyContent: "center", alignItems: "center" }}
+              onPress={() => setLangPickerOpen(false)}
+            >
+              <Pressable
+                style={{
+                  backgroundColor: "#fff",
+                  borderRadius: 14,
+                  padding: 8,
+                  minWidth: 140,
+                  overflow: "hidden",
+                }}
+                onPress={() => {}}
+              >
+                {availableLangs.map((lang) => (
+                  <Pressable
+                    key={lang}
+                    onPress={() => {
+                      onLangTopChange(lang);
+                      setLangPickerOpen(false);
+                    }}
+                    style={{
+                      paddingHorizontal: 20,
+                      paddingVertical: 14,
+                      borderRadius: 8,
+                      backgroundColor: langTop === lang ? colors.primaryBg : "transparent",
+                    }}
+                  >
+                    <Text
+                      style={{
+                        fontSize: 16,
+                        fontWeight: langTop === lang ? "700" : "400",
+                        color: langTop === lang ? colors.primary : colors.text,
+                        textAlign: "center",
+                      }}
+                    >
+                      {LANG_LABELS[lang] ?? lang.toUpperCase()}
+                    </Text>
+                  </Pressable>
+                ))}
+              </Pressable>
+            </Pressable>
+          </Modal>
+        </View>
+
+        {/* Reader mode toggle */}
+        <TouchableOpacity
+          onPress={() => {
+            const next = { dual: "interleaved", interleaved: "single", single: "dual" } as const;
+            onReaderModeChange(next[readerMode]);
+          }}
+          activeOpacity={0.6}
+          style={{
+            paddingHorizontal: 8,
+            paddingVertical: 4,
+            borderRadius: 6,
+            backgroundColor: colors.border,
+            marginRight: 6,
+          }}
+        >
+          <Text style={{ fontSize: 12, fontWeight: "600" }}>
+            {readerMode === "dual" ? "☗" : readerMode === "interleaved" ? "⇄" : "◉"}
+          </Text>
+        </TouchableOpacity>
+
+        <Text style={{ fontSize: 12, color: colors.textMuted, marginRight: 4 }}>
           {currentPage} / {totalPages}
         </Text>
 
-        <TouchableOpacity onPress={() => setOpenSettings(true)}>
-          <Text style={{ fontSize: 20 }}>⚙️</Text>
+        <TouchableOpacity
+          onPress={() => setOpenSettings(true)}
+          activeOpacity={0.6}
+          style={{
+            width: 36,
+            height: 36,
+            borderRadius: 18,
+            backgroundColor: colors.border,
+            justifyContent: "center",
+            alignItems: "center",
+          }}
+        >
+          <Text style={{ fontSize: 16 }}>⚙️</Text>
         </TouchableOpacity>
       </View>
 
-      <View style={{ height: 3, backgroundColor: "#E2E8F0" }}>
+      <View style={{ height: 3, backgroundColor: colors.border }}>
         <View
           style={{
             height: 3,
-            backgroundColor: "#6366F1",
+            backgroundColor: colors.primary,
             width: `${progress}%`,
           }}
         />
@@ -247,8 +365,8 @@ export function ReadingBar({
                         borderRadius: 10,
                         alignItems: "center",
                         borderWidth: 2,
-                        borderColor: theme === t.key ? "#1A7A6E" : "#E5E7EB",
-                        backgroundColor: theme === t.key ? "#E8F5F3" : "#fff",
+                        borderColor: theme === t.key ? colors.primary : colors.borderAlt,
+                        backgroundColor: theme === t.key ? colors.primaryBg : "#fff",
                       }}
                     >
                       <Text style={{ fontSize: 20 }}>{t.emoji}</Text>
@@ -271,7 +389,7 @@ export function ReadingBar({
                       paddingHorizontal: 14,
                       paddingVertical: 10,
                       borderRadius: 8,
-                      backgroundColor: "#E2E8F0",
+                      backgroundColor: colors.border,
                     }}
                   >
                     <Text style={{ fontSize: 14 }}>A−</Text>
@@ -285,7 +403,7 @@ export function ReadingBar({
                         width: 34,
                         height: 34,
                         borderRadius: 8,
-                        backgroundColor: fontSize === size ? "#1A7A6E" : "#E2E8F0",
+                        backgroundColor: fontSize === size ? colors.primary : colors.border,
                         alignItems: "center",
                         justifyContent: "center",
                       }}
@@ -294,7 +412,7 @@ export function ReadingBar({
                         style={{
                           fontSize: 12,
                           fontWeight: "600",
-                          color: fontSize === size ? "#fff" : "#1C1C1E",
+                          color: fontSize === size ? "#fff" : colors.text,
                         }}
                       >
                         {size}
@@ -308,7 +426,7 @@ export function ReadingBar({
                       paddingHorizontal: 14,
                       paddingVertical: 10,
                       borderRadius: 8,
-                      backgroundColor: "#E2E8F0",
+                      backgroundColor: colors.border,
                     }}
                   >
                     <Text style={{ fontSize: 14 }}>A+</Text>
@@ -330,8 +448,8 @@ export function ReadingBar({
                       borderRadius: 10,
                       alignItems: "center",
                       borderWidth: 2,
-                      borderColor: !boldEnabled ? "#1A7A6E" : "#E5E7EB",
-                      backgroundColor: !boldEnabled ? "#E8F5F3" : "#fff",
+                      borderColor: !boldEnabled ? colors.primary : colors.borderAlt,
+                      backgroundColor: !boldEnabled ? colors.primaryBg : "#fff",
                     }}
                   >
                     <Text style={{ fontSize: 15, fontWeight: "400" }}>Normal</Text>
@@ -344,8 +462,8 @@ export function ReadingBar({
                       borderRadius: 10,
                       alignItems: "center",
                       borderWidth: 2,
-                      borderColor: boldEnabled ? "#1A7A6E" : "#E5E7EB",
-                      backgroundColor: boldEnabled ? "#E8F5F3" : "#fff",
+                      borderColor: boldEnabled ? colors.primary : colors.borderAlt,
+                      backgroundColor: boldEnabled ? colors.primaryBg : "#fff",
                     }}
                   >
                     <Text style={{ fontSize: 15, fontWeight: "700" }}>Negrita</Text>
@@ -367,14 +485,14 @@ export function ReadingBar({
                         paddingVertical: 10,
                         paddingHorizontal: 14,
                         borderRadius: 8,
-                        backgroundColor: lineSpacing === sp ? "#1A7A6E" : "#E2E8F0",
+                        backgroundColor: lineSpacing === sp ? colors.primary : colors.border,
                       }}
                     >
                       <Text
                         style={{
                           fontSize: 12,
                           fontWeight: "600",
-                          color: lineSpacing === sp ? "#fff" : "#1C1C1E",
+                          color: lineSpacing === sp ? "#fff" : colors.text,
                         }}
                       >
                         {sp}
@@ -398,17 +516,56 @@ export function ReadingBar({
                         paddingVertical: 10,
                         paddingHorizontal: 14,
                         borderRadius: 8,
-                        backgroundColor: sideMargin === m ? "#1A7A6E" : "#E2E8F0",
+                        backgroundColor: sideMargin === m ? colors.primary : colors.border,
                       }}
                     >
                       <Text
                         style={{
                           fontSize: 12,
                           fontWeight: "600",
-                          color: sideMargin === m ? "#fff" : "#1C1C1E",
+                          color: sideMargin === m ? "#fff" : colors.text,
                         }}
                       >
                         {m}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+
+              {/* Alineación */}
+              <View style={{ marginBottom: 20 }}>
+                <Text style={{ fontSize: 15, fontWeight: "700", marginBottom: 12, textAlign: "center" }}>
+                  Alineación
+                </Text>
+                <View style={{ flexDirection: "row", gap: 8, justifyContent: "center" }}>
+                  {[
+                    { key: "left", label: "Izq" },
+                    { key: "center", label: "Centro" },
+                    { key: "right", label: "Der" },
+                    { key: "justify", label: "Just" },
+                  ].map((opt) => (
+                    <TouchableOpacity
+                      key={opt.key}
+                      onPress={() => onTextAlignChange(opt.key as typeof textAlign)}
+                      style={{
+                        flex: 1,
+                        paddingVertical: 12,
+                        borderRadius: 10,
+                        alignItems: "center",
+                        borderWidth: 2,
+                        borderColor: textAlign === opt.key ? colors.primary : colors.borderAlt,
+                        backgroundColor: textAlign === opt.key ? colors.primaryBg : "#fff",
+                      }}
+                    >
+                      <Text
+                        style={{
+                          fontSize: 13,
+                          fontWeight: "600",
+                          color: textAlign === opt.key ? colors.primaryDarkest : colors.text,
+                        }}
+                      >
+                        {opt.label}
                       </Text>
                     </TouchableOpacity>
                   ))}
@@ -431,8 +588,8 @@ export function ReadingBar({
                         borderRadius: 10,
                         alignItems: "center",
                         borderWidth: 2,
-                        borderColor: fontFamily === f.value ? "#1A7A6E" : "#E5E7EB",
-                        backgroundColor: fontFamily === f.value ? "#E8F5F3" : "#fff",
+                        borderColor: fontFamily === f.value ? colors.primary : colors.borderAlt,
+                        backgroundColor: fontFamily === f.value ? colors.primaryBg : "#fff",
                       }}
                     >
                       <Text
@@ -449,32 +606,17 @@ export function ReadingBar({
                 </View>
               </View>
 
-              {/* Idioma y modo */}
-              <View>
-                <Text style={{ fontSize: 15, fontWeight: "700", marginBottom: 12, textAlign: "center" }}>
-                  Idioma y modo de lectura
-                </Text>
-                <View style={{ flexDirection: "row", justifyContent: "center", alignItems: "center", gap: 12 }}>
-                  <LangDropdown value={langTop} onChange={onLangTopChange} label="Sup" />
-                  <TouchableOpacity
-                    onPress={() => {
-                      const next = { dual: "interleaved", interleaved: "single", single: "dual" } as const;
-                      onReaderModeChange(next[readerMode]);
-                    }}
-                    style={{
-                      paddingHorizontal: 12,
-                      paddingVertical: 6,
-                      borderRadius: 8,
-                      backgroundColor: "#E2E8F0",
-                    }}
-                  >
-                    <Text style={{ fontSize: 12, fontWeight: "600" }}>
-                      {readerMode === "dual" ? "☗ Dual" : readerMode === "interleaved" ? "⇄ Alternado" : "◉ 1 idioma"}
-                    </Text>
-                  </TouchableOpacity>
-                  <LangDropdown value={langBottom} onChange={onLangBottomChange} label="Inf" />
+              {/* Idioma inferior (solo visible en dual/interleaved) */}
+              {readerMode !== "single" && (
+                <View>
+                  <Text style={{ fontSize: 15, fontWeight: "700", marginBottom: 12, textAlign: "center" }}>
+                    Segundo idioma
+                  </Text>
+                  <View style={{ flexDirection: "row", justifyContent: "center", gap: 12 }}>
+                    <LangDropdown value={langBottom} onChange={onLangBottomChange} label="Inf" />
+                  </View>
                 </View>
-              </View>
+              )}
             </ScrollView>
           </Pressable>
         </Pressable>

@@ -1,3 +1,4 @@
+import { colors } from "@/src/theme";
 import { useVocabularyStore } from "@/src/store/vocabularyStore";
 import { useState } from "react";
 import {
@@ -122,12 +123,12 @@ export default function Study() {
   // =====================
   if (screen === "setup") {
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: "#F7FAFC" }}>
+      <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
         <ScrollView contentContainerStyle={{ padding: 24 }}>
           <Text style={{ fontSize: 24, fontWeight: "700", marginBottom: 4 }}>
             📚 Repaso
           </Text>
-          <Text style={{ color: "#94A3B8", marginBottom: 32 }}>
+          <Text style={{ color: colors.textMuted, marginBottom: 32 }}>
             Elige qué estudiar y cómo
           </Text>
 
@@ -155,8 +156,8 @@ export default function Study() {
                     padding: 16,
                     borderRadius: 14,
                     borderWidth: 1.5,
-                    borderColor: active ? "#6366F1" : "#E2E8F0",
-                    backgroundColor: active ? "#EEF2FF" : "#fff",
+                    borderColor: active ? colors.primary : colors.border,
+                    backgroundColor: active ? colors.primaryBg : "#fff",
                   }}
                 >
                   <Text style={{ fontSize: 24, marginRight: 12 }}>
@@ -166,7 +167,7 @@ export default function Study() {
                     <Text
                       style={{
                         fontWeight: "700",
-                        color: active ? "#6366F1" : "#1E293B",
+                        color: active ? colors.primary : colors.text,
                       }}
                     >
                       {f.label}
@@ -174,7 +175,7 @@ export default function Study() {
                   </View>
                   <View
                     style={{
-                      backgroundColor: active ? "#6366F1" : "#F1F5F9",
+                      backgroundColor: active ? colors.primary : colors.border,
                       borderRadius: 20,
                       paddingHorizontal: 10,
                       paddingVertical: 4,
@@ -182,7 +183,7 @@ export default function Study() {
                   >
                     <Text
                       style={{
-                        color: active ? "#fff" : "#64748B",
+                        color: active ? "#fff" : colors.textSecondary,
                         fontWeight: "700",
                         fontSize: 13,
                       }}
@@ -212,8 +213,8 @@ export default function Study() {
                     borderRadius: 14,
                     alignItems: "center",
                     borderWidth: 1.5,
-                    borderColor: active ? "#6366F1" : "#E2E8F0",
-                    backgroundColor: active ? "#EEF2FF" : "#fff",
+                    borderColor: active ? colors.primary : colors.border,
+                    backgroundColor: active ? colors.primaryBg : "#fff",
                   }}
                 >
                   <Text style={{ fontSize: 28, marginBottom: 6 }}>
@@ -222,7 +223,7 @@ export default function Study() {
                   <Text
                     style={{
                       fontWeight: "700",
-                      color: active ? "#6366F1" : "#1E293B",
+                      color: active ? colors.primary : colors.text,
                     }}
                   >
                     {m.label}
@@ -236,7 +237,7 @@ export default function Study() {
           {filteredItems.length === 0 ? (
             <View style={{ alignItems: "center", padding: 24 }}>
               <Text style={{ fontSize: 40, marginBottom: 12 }}>📭</Text>
-              <Text style={{ color: "#94A3B8", textAlign: "center" }}>
+              <Text style={{ color: colors.textMuted, textAlign: "center" }}>
                 No hay palabras en esta categoría
               </Text>
             </View>
@@ -247,7 +248,7 @@ export default function Study() {
                 setScreen("session");
               }}
               style={{
-                backgroundColor: "#6366F1",
+                backgroundColor: colors.primary,
                 borderRadius: 14,
                 padding: 16,
                 alignItems: "center",
@@ -270,7 +271,7 @@ export default function Study() {
     const total = results.bad + results.ok + results.good;
     const accuracy = Math.round((results.good / total) * 100);
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: "#F7FAFC" }}>
+      <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
         <View
           style={{
             flex: 1,
@@ -285,7 +286,7 @@ export default function Study() {
           <Text style={{ fontSize: 24, fontWeight: "700", marginBottom: 4 }}>
             ¡Sesión completada!
           </Text>
-          <Text style={{ color: "#94A3B8", marginBottom: 32 }}>
+          <Text style={{ color: colors.textMuted, marginBottom: 32 }}>
             Precisión: {accuracy}%
           </Text>
 
@@ -301,21 +302,21 @@ export default function Study() {
               {
                 label: "No la sé",
                 value: results.bad,
-                color: "#EF4444",
+                color: colors.error,
                 bg: "#FEF2F2",
                 border: "#FECACA",
               },
               {
                 label: "Más o menos",
                 value: results.ok,
-                color: "#F59E0B",
+                color: colors.warning,
                 bg: "#FFFBEB",
                 border: "#FDE68A",
               },
               {
                 label: "La domino",
                 value: results.good,
-                color: "#16A34A",
+                color: colors.success,
                 bg: "#F0FDF4",
                 border: "#BBF7D0",
               },
@@ -354,7 +355,7 @@ export default function Study() {
           <TouchableOpacity
             onPress={restart}
             style={{
-              backgroundColor: "#6366F1",
+              backgroundColor: colors.primary,
               borderRadius: 14,
               paddingHorizontal: 32,
               paddingVertical: 14,
@@ -379,7 +380,7 @@ export default function Study() {
   // SESSION
   // =====================
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: "#F7FAFC" }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
       <ScrollView contentContainerStyle={{ padding: 16, flexGrow: 1 }}>
         {/* header */}
         <View
@@ -390,9 +391,9 @@ export default function Study() {
           }}
         >
           <TouchableOpacity onPress={restart}>
-            <Text style={{ color: "#94A3B8" }}>← Salir</Text>
+            <Text style={{ color: colors.textMuted }}>← Salir</Text>
           </TouchableOpacity>
-          <Text style={{ color: "#94A3B8" }}>
+          <Text style={{ color: colors.textMuted }}>
             {currentIndex + 1} / {filteredItems.length}
           </Text>
         </View>
@@ -401,7 +402,7 @@ export default function Study() {
         <View
           style={{
             height: 4,
-            backgroundColor: "#E2E8F0",
+            backgroundColor: colors.border,
             borderRadius: 4,
             marginBottom: 32,
           }}
@@ -410,7 +411,7 @@ export default function Study() {
             style={{
               height: 4,
               borderRadius: 4,
-              backgroundColor: "#6366F1",
+              backgroundColor: colors.primary,
               width: `${((currentIndex + 1) / filteredItems.length) * 100}%`,
             }}
           />
@@ -433,7 +434,7 @@ export default function Study() {
                   justifyContent: "center",
                   alignItems: "center",
                   borderWidth: 1,
-                  borderColor: "#E2E8F0",
+                  borderColor: colors.border,
                   backfaceVisibility: "hidden",
                   transform: [{ rotateY: frontRotate }],
                 }}
@@ -441,7 +442,7 @@ export default function Study() {
                 <Text
                   style={{
                     fontSize: 11,
-                    color: "#94A3B8",
+                    color: colors.textMuted,
                     marginBottom: 12,
                     letterSpacing: 1,
                   }}
@@ -452,7 +453,7 @@ export default function Study() {
                   style={{
                     fontSize: 28,
                     fontWeight: "700",
-                    color: "#1E293B",
+                    color: colors.text,
                     textAlign: "center",
                   }}
                 >
@@ -469,7 +470,7 @@ export default function Study() {
 
               <Animated.View
                 style={{
-                  backgroundColor: "#6366F1",
+                  backgroundColor: colors.primary,
                   borderRadius: 20,
                   padding: 32,
                   minHeight: 260,
@@ -549,7 +550,7 @@ export default function Study() {
                     label: "No la sé",
                     bg: "#FEF2F2",
                     border: "#FECACA",
-                    color: "#EF4444",
+                    color: colors.error,
                   },
                   {
                     mastery: 1 as const,
@@ -557,7 +558,7 @@ export default function Study() {
                     label: "Más o menos",
                     bg: "#FFFBEB",
                     border: "#FDE68A",
-                    color: "#F59E0B",
+                    color: colors.warning,
                   },
                   {
                     mastery: 2 as const,
@@ -565,7 +566,7 @@ export default function Study() {
                     label: "La domino",
                     bg: "#F0FDF4",
                     border: "#BBF7D0",
-                    color: "#16A34A",
+                    color: colors.success,
                   },
                 ].map((btn) => (
                   <TouchableOpacity
@@ -611,14 +612,14 @@ export default function Study() {
                 justifyContent: "center",
                 alignItems: "center",
                 borderWidth: 1,
-                borderColor: "#E2E8F0",
+                borderColor: colors.border,
                 marginBottom: 24,
               }}
             >
               <Text
                 style={{
                   fontSize: 11,
-                  color: "#94A3B8",
+                  color: colors.textMuted,
                   marginBottom: 12,
                   letterSpacing: 1,
                 }}
@@ -629,7 +630,7 @@ export default function Study() {
                 style={{
                   fontSize: 22,
                   fontWeight: "700",
-                  color: "#1E293B",
+                  color: colors.text,
                   textAlign: "center",
                 }}
               >
@@ -639,7 +640,7 @@ export default function Study() {
                 <Text
                   style={{
                     fontSize: 13,
-                    color: "#94A3B8",
+                    color: colors.textMuted,
                     textAlign: "center",
                     marginTop: 12,
                     fontStyle: "italic",
@@ -650,7 +651,7 @@ export default function Study() {
               )}
             </View>
 
-            <Text style={{ fontSize: 13, color: "#64748B", marginBottom: 8 }}>
+            <Text style={{ fontSize: 13, color: colors.textSecondary, marginBottom: 8 }}>
               Escribe la palabra en inglés:
             </Text>
 
@@ -664,9 +665,9 @@ export default function Study() {
                 borderWidth: 1.5,
                 borderColor: checked
                   ? isCorrect
-                    ? "#16A34A"
-                    : "#EF4444"
-                  : "#E2E8F0",
+                    ? colors.success
+                    : colors.error
+                  : colors.border,
                 borderRadius: 12,
                 padding: 14,
                 fontSize: 18,
@@ -692,7 +693,7 @@ export default function Study() {
               >
                 <Text
                   style={{
-                    color: isCorrect ? "#16A34A" : "#EF4444",
+                    color: isCorrect ? colors.success : colors.error,
                     fontWeight: "700",
                     marginBottom: 4,
                   }}
@@ -700,7 +701,7 @@ export default function Study() {
                   {isCorrect ? "✅ ¡Correcto!" : "❌ Incorrecto"}
                 </Text>
                 {!isCorrect && (
-                  <Text style={{ color: "#64748B" }}>
+                  <Text style={{ color: colors.textSecondary }}>
                     La respuesta era:{" "}
                     <Text style={{ fontWeight: "700" }}>{current.content}</Text>
                   </Text>
@@ -714,7 +715,7 @@ export default function Study() {
                 disabled={answer.trim().length === 0}
                 style={{
                   backgroundColor:
-                    answer.trim().length === 0 ? "#E2E8F0" : "#6366F1",
+                    answer.trim().length === 0 ? colors.border : colors.primary,
                   borderRadius: 14,
                   padding: 16,
                   alignItems: "center",
@@ -730,7 +731,7 @@ export default function Study() {
               <TouchableOpacity
                 onPress={nextWriting}
                 style={{
-                  backgroundColor: "#6366F1",
+                  backgroundColor: colors.primary,
                   borderRadius: 14,
                   padding: 16,
                   alignItems: "center",

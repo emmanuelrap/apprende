@@ -29,6 +29,7 @@ type AuthStore = {
 
   init: () => Promise<void>;
   refreshProfile: (userId: string) => Promise<void>;
+  updateProfile: (userId: string, updates: Partial<Profile>) => Promise<void>;
   logout: () => Promise<void>;
   clearMyData: () => Promise<void>;
   reset: () => void;
@@ -42,6 +43,17 @@ export const useAuthStore = create<AuthStore>((set) => ({
   xpEvents: [],
   isLoading: true,
   error: null,
+
+  updateProfile: async (userId: string, updates: Partial<Profile>) => {
+    const { error } = await supabase
+      .from("profiles")
+      .update(updates)
+      .eq("id", userId);
+    if (error) throw error;
+    set((s) => ({
+      profile: s.profile ? { ...s.profile, ...updates } : s.profile,
+    }));
+  },
 
   refreshProfile: async (userId: string) => {
     const { data, error } = await supabase

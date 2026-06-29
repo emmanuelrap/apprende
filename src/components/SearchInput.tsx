@@ -1,12 +1,15 @@
+import { colors, shadows } from "@/src/theme";
 import { Ionicons } from "@expo/vector-icons";
-import { LinearGradient } from "expo-linear-gradient";
-import { TextInput, TouchableOpacity, View } from "react-native";
+import { useCallback, useEffect, useRef } from "react";
+import { ActivityIndicator, TextInput, TouchableOpacity, View } from "react-native";
 
 interface SearchInputProps {
   value: string;
   onChangeText: (text: string) => void;
   placeholder?: string;
   onFilterPress?: () => void;
+  filterLoading?: boolean;
+  debounceMs?: number;
 }
 
 export function SearchInput({
@@ -14,64 +17,74 @@ export function SearchInput({
   onChangeText,
   placeholder = "Buscar libros, videos...",
   onFilterPress,
+  filterLoading,
+  debounceMs = 400,
 }: SearchInputProps) {
-  return (
-    <View style={{ paddingHorizontal: 16, paddingVertical: 10 }}>
-      <LinearGradient
-        colors={["#0F766E", "#14B8A6", "#34D399"]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={{
-          borderRadius: 16,
-          padding: 12,
-          flexDirection: "row",
-          alignItems: "center",
-          gap: 10,
-        }}
-      >
-        {/* Search input pill */}
-        <View
-          style={{
-            flex: 1,
-            flexDirection: "row",
-            alignItems: "center",
-            backgroundColor: "#fff",
-            borderRadius: 100,
-            paddingHorizontal: 16,
-            paddingVertical: 11,
-            gap: 10,
-          }}
-        >
-          <Ionicons name="search" size={18} color="#0F766E" />
-          <TextInput
-            style={{ flex: 1, fontSize: 14, color: "#1C1C1E", paddingVertical: 0 }}
-            value={value}
-            onChangeText={onChangeText}
-            placeholder={placeholder}
-            placeholderTextColor="#9CA3AF"
-            returnKeyType="search"
-            clearButtonMode="while-editing"
-          />
-        </View>
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-        {/* Filter button */}
+  const handleChange = useCallback(
+    (text: string) => {
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+      timeoutRef.current = setTimeout(() => onChangeText(text), debounceMs);
+    },
+    [onChangeText, debounceMs],
+  );
+
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    };
+  }, []);
+
+  return (
+    <View
+      style={{
+        flexDirection: "row",
+        alignItems: "center",
+        backgroundColor: colors.white,
+        borderRadius: 16,
+        marginHorizontal: 16,
+        marginTop: 12,
+        marginBottom: 4,
+        paddingLeft: 16,
+        paddingRight: 6,
+        height: 52,
+        gap: 10,
+        ...shadows.card,
+      }}
+    >
+      <Ionicons name="search" size={20} color={colors.textMuted} />
+      <TextInput
+        style={{ flex: 1, fontSize: 15, color: colors.text, paddingVertical: 0 }}
+        defaultValue={value}
+        onChangeText={handleChange}
+        placeholder={placeholder}
+        placeholderTextColor={colors.textMuted}
+        returnKeyType="search"
+        clearButtonMode="while-editing"
+      />
+
+      {onFilterPress && (
         <TouchableOpacity
           onPress={onFilterPress}
           activeOpacity={0.7}
+          disabled={filterLoading}
           style={{
-            width: 46,
-            height: 46,
-            borderRadius: 23,
-            backgroundColor: "rgba(255,255,255,0.15)",
+            width: 40,
+            height: 40,
+            borderRadius: 12,
+            backgroundColor: filterLoading ? colors.primary : colors.primaryBg,
             justifyContent: "center",
             alignItems: "center",
-            borderWidth: 1,
-            borderColor: "rgba(255,255,255,0.25)",
           }}
         >
-          <Ionicons name="options-outline" size={20} color="#fff" />
+          {filterLoading ? (
+            <ActivityIndicator size="small" color={colors.white} />
+          ) : (
+            <Ionicons name="options-outline" size={20} color={colors.primary} />
+          )}
         </TouchableOpacity>
-      </LinearGradient>
+      )}
     </View>
   );
 }

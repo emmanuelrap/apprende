@@ -1,3 +1,4 @@
+import { colors, borderRadius, shadows, typography } from "@/src/theme";
 import { Image, Text, TouchableOpacity, View } from "react-native";
 import { difficultyLabel } from "@/src/services/recorridos";
 
@@ -16,12 +17,10 @@ type Recorrido = {
   completedBooks: number;
 };
 
-const TEAL = "#078F83";
-
 const STATUS_CONFIG = {
-  not_started: { label: "Sin empezar", bg: "#F1F5F9", text: "#64748B", icon: "🗺️" },
-  in_progress: { label: "En curso", bg: "#EFF6FF", text: "#3B82F6", icon: "🚀" },
-  completed: { label: "Completado", bg: "#F0FDF4", text: "#16A34A", icon: "🏆" },
+  not_started: { label: "Sin empezar", bg: "#F1F5F9", text: colors.textSecondary, icon: "🗺️" },
+  in_progress: { label: "En curso", bg: colors.readingBg, text: colors.reading, icon: "🚀" },
+  completed: { label: "Completado", bg: colors.successBg, text: colors.success, icon: "🏆" },
 } as const;
 
 export function RecorridoCard({
@@ -41,20 +40,16 @@ export function RecorridoCard({
       onPress={locked ? undefined : onPress}
       activeOpacity={locked ? 1 : 0.85}
       style={{
-        backgroundColor: "#FFFFFF",
+        backgroundColor: colors.white,
         borderRadius: 20,
         marginBottom: 12,
-        shadowColor: "#000",
-        shadowOpacity: 0.06,
-        shadowRadius: 12,
-        shadowOffset: { width: 0, height: 4 },
-        elevation: 3,
+        ...shadows.cardLg,
         opacity: locked ? 0.6 : 1,
         overflow: "hidden",
       }}
     >
       {/* Cover hero image */}
-      <View style={{ height: 100, backgroundColor: "#E8F5F3", position: "relative", overflow: "hidden" }}>
+      <View style={{ height: 100, backgroundColor: colors.primaryBg, position: "relative", overflow: "hidden" }}>
         {recorrido.cover ? (
           <Image
             source={{ uri: recorrido.cover }}
@@ -83,7 +78,7 @@ export function RecorridoCard({
         {/* Title + status */}
         <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" }}>
           <Text
-            style={{ fontWeight: "700", fontSize: 15, color: "#0F172A", flex: 1, marginRight: 8 }}
+            style={{ fontWeight: "700", fontSize: 15, color: colors.text, flex: 1, marginRight: 8 }}
             numberOfLines={1}
           >
             {recorrido.title}
@@ -108,7 +103,7 @@ export function RecorridoCard({
 
         {recorrido.description && (
           <Text
-            style={{ fontSize: 12, color: "#64748B", lineHeight: 16 }}
+            style={{ fontSize: 12, color: colors.textSecondary, lineHeight: 16 }}
             numberOfLines={2}
           >
             {recorrido.description}
@@ -116,16 +111,16 @@ export function RecorridoCard({
         )}
 
         <View style={{ flexDirection: "row", gap: 12, marginTop: 2 }}>
-          <Text style={{ fontSize: 11, color: "#94A3B8" }}>
+          <Text style={{ fontSize: 11, color: colors.textMuted }}>
             📚 {recorrido.completedBooks}/{recorrido.totalBooks} libros
           </Text>
-          <Text style={{ fontSize: 11, color: "#94A3B8" }}>
+          <Text style={{ fontSize: 11, color: colors.textMuted }}>
             ⏱ {recorrido.estimatedMinutes} min
           </Text>
-          <Text style={{ fontSize: 11, color: "#94A3B8" }}>
+          <Text style={{ fontSize: 11, color: colors.textMuted }}>
             📖 {difficultyLabel(recorrido.difficulty)}
           </Text>
-          <Text style={{ fontSize: 11, color: "#94A3B8" }}>
+          <Text style={{ fontSize: 11, color: colors.textMuted }}>
             🏆 {recorrido.xpReward} XP
           </Text>
         </View>
@@ -144,7 +139,7 @@ export function RecorridoCard({
             }}
           >
             <Text style={{ fontSize: 12 }}>🔒</Text>
-            <Text style={{ fontSize: 11, color: "#DC2626", fontWeight: "600" }}>
+            <Text style={{ fontSize: 11, color: colors.error, fontWeight: "600" }}>
               Necesitas nivel {recorrido.minLevel}+
             </Text>
           </View>
@@ -155,7 +150,7 @@ export function RecorridoCard({
             <View
               style={{
                 height: 6,
-                backgroundColor: "#F1F5F9",
+                backgroundColor: colors.border,
                 borderRadius: 3,
                 overflow: "hidden",
               }}
@@ -165,12 +160,12 @@ export function RecorridoCard({
                   height: 6,
                   borderRadius: 3,
                   backgroundColor:
-                    recorrido.status === "completed" ? "#16A34A" : TEAL,
+                    recorrido.status === "completed" ? "#16A34A" : colors.primary,
                   width: `${recorrido.progress}%`,
                 }}
               />
             </View>
-            <Text style={{ fontSize: 10, color: "#94A3B8", marginTop: 4 }}>
+            <Text style={{ fontSize: 10, color: colors.textMuted, marginTop: 4 }}>
               {recorrido.status === "completed"
                 ? "Recorrido completado"
                 : `${recorrido.progress}% completado`}

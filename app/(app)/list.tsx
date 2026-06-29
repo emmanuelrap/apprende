@@ -3,11 +3,10 @@ import { RecorridoCard } from "@/src/components/RecorridoCard";
 import { useAuthStore } from "@/src/store/authStore";
 import { useBookStore } from "@/src/store/bookStore";
 import { useRecorridoStore } from "@/src/store/recorridoStore";
+import { colors } from "@/src/theme";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { FlatList, Text, TouchableOpacity, View } from "react-native";
-
-const TEAL = "#078F83";
 
 export default function ListScreen() {
   const router = useRouter();
@@ -22,12 +21,27 @@ export default function ListScreen() {
   const books = useBookStore((s) => s.books);
   const { recorridos } = useRecorridoStore();
   const [favIds, setFavIds] = useState<Set<string>>(new Set());
+  const [readingBookIds, setReadingBookIds] = useState<Set<string>>(new Set());
   const userLevel = profile?.level ?? 1;
 
   useEffect(() => {
     if (!user?.id) return;
     import("@/src/services/favorites").then(({ getFavorites }) =>
       getFavorites(user.id).then((ids) => setFavIds(new Set(ids))),
+    );
+  }, [user?.id]);
+
+  useEffect(() => {
+    if (!user?.id) return;
+    import("@/src/services/supabase").then(({ supabase }) =>
+      supabase
+        .from("user_books")
+        .select("book_id")
+        .eq("user_id", user.id)
+        .eq("status", "reading")
+        .then(({ data }) =>
+          setReadingBookIds(new Set((data ?? []).map((r) => r.book_id))),
+        ),
     );
   }, [user?.id]);
 
@@ -39,6 +53,9 @@ export default function ListScreen() {
   const filtered = useMemo(() => {
     if (params.type === "favorites") {
       return books.filter((b) => favIds.has(b.id));
+    }
+    if (params.type === "reading") {
+      return books.filter((b) => readingBookIds.has(b.id));
     }
     if (params.type === "tag" && params.tagId) {
       return books.filter((b) => b.tags?.some((t) => t.id === params.tagId));
@@ -55,7 +72,7 @@ export default function ListScreen() {
       return recorridos;
     }
     return [];
-  }, [params.type, params.tagId, books, recorridos, favIds]);
+  }, [params.type, params.tagId, books, recorridos, favIds, readingBookIds]);
 
   const renderItem = useCallback(
     ({ item }: { item: any }) => {
@@ -86,10 +103,10 @@ export default function ListScreen() {
   const title = params.title || "Lista";
 
   return (
-    <View style={{ flex: 1, backgroundColor: "#F7FAFC" }}>
+    <View style={{ flex: 1, backgroundColor: colors.bg }}>
       <View
         style={{
-          backgroundColor: TEAL,
+          backgroundColor: colors.primary,
           paddingHorizontal: 16,
           paddingTop: 56,
           paddingBottom: 16,
@@ -140,7 +157,7 @@ export default function ListScreen() {
             }}
           >
             <Text style={{ fontSize: 36, marginBottom: 12 }}>📭</Text>
-            <Text style={{ fontSize: 15, color: "#94A3B8" }}>
+            <Text style={{ fontSize: 15, color: colors.textMuted }}>
               No hay {label}s disponibles
             </Text>
           </View>

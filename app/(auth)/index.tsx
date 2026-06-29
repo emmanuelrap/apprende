@@ -1,7 +1,6 @@
-// AUTH
-
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
+import { colors, typography } from "@/src/theme";
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -11,6 +10,7 @@ import {
   TextInput,
   View,
 } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
 import { supabase } from "../../src/services/supabase";
 
 export default function AuthScreen() {
@@ -126,10 +126,10 @@ export default function AuthScreen() {
           flex: 1,
           justifyContent: "center",
           alignItems: "center",
-          backgroundColor: "#F7FAFC",
+          backgroundColor: colors.bg,
         }}
       >
-        <ActivityIndicator size="large" />
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
   }
@@ -137,74 +137,183 @@ export default function AuthScreen() {
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : undefined}
-      style={{ flex: 1 }}
+      style={{ flex: 1, backgroundColor: colors.bg }}
     >
-      <View style={{ flex: 1, justifyContent: "center", padding: 24 }}>
-        <Text style={{ fontSize: 28, fontWeight: "700" }}>
-          {isRegister ? "Crear cuenta" : "Ingresar"}
+      <LinearGradient
+        colors={[colors.primary, colors.primaryDark]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={{
+          paddingTop: 80,
+          paddingBottom: 48,
+          paddingHorizontal: 24,
+          borderBottomLeftRadius: 32,
+          borderBottomRightRadius: 32,
+        }}
+      >
+        <Text
+          style={{
+            fontSize: 42,
+            fontWeight: "900",
+            color: "#fff",
+            letterSpacing: -1,
+          }}
+        >
+          Apprende
+        </Text>
+        <Text
+          style={{
+            fontSize: 16,
+            color: "rgba(255,255,255,0.8)",
+            marginTop: 8,
+            lineHeight: 22,
+          }}
+        >
+          Aprende idiomas leyendo libros que te encantan.
+        </Text>
+      </LinearGradient>
+
+      <View style={{ flex: 1, paddingHorizontal: 24, paddingTop: 32 }}>
+        <Text
+          style={{
+            fontSize: 24,
+            fontWeight: "800",
+            color: colors.text,
+            marginBottom: 24,
+          }}
+        >
+          {isRegister ? "Crear cuenta" : "Bienvenido de vuelta"}
         </Text>
 
-        <View style={{ gap: 12, marginTop: 24 }}>
+        <View style={{ gap: 14 }}>
           {isRegister && (
-            <TextInput
-              placeholder="Nombre"
-              style={inputStyle}
-              value={name}
-              onChangeText={setName}
-            />
+            <View>
+              <Text style={{ ...typography.badge, color: colors.textSecondary, marginBottom: 6, textTransform: "uppercase", letterSpacing: 0.5 }}>
+                Nombre
+              </Text>
+              <TextInput
+                placeholder="Tu nombre"
+                placeholderTextColor={colors.textVeryMuted}
+                style={{
+                  backgroundColor: colors.white,
+                  borderRadius: 14,
+                  paddingHorizontal: 16,
+                  paddingVertical: 14,
+                  fontSize: 15,
+                  color: colors.text,
+                  borderWidth: 1,
+                  borderColor: colors.border,
+                }}
+                value={name}
+                onChangeText={setName}
+                autoCapitalize="words"
+              />
+            </View>
           )}
-          <TextInput
-            placeholder="Email"
-            style={inputStyle}
-            value={email}
-            onChangeText={setEmail}
-          />
-          <TextInput
-            placeholder="Password"
-            secureTextEntry
-            style={inputStyle}
-            value={password}
-            onChangeText={setPassword}
-          />
+          <View>
+            <Text style={{ ...typography.badge, color: colors.textSecondary, marginBottom: 6, textTransform: "uppercase", letterSpacing: 0.5 }}>
+              Email
+            </Text>
+            <TextInput
+              placeholder="tu@email.com"
+              placeholderTextColor={colors.textVeryMuted}
+              style={{
+                backgroundColor: colors.white,
+                borderRadius: 14,
+                paddingHorizontal: 16,
+                paddingVertical: 14,
+                fontSize: 15,
+                color: colors.text,
+                borderWidth: 1,
+                borderColor: colors.border,
+              }}
+              value={email}
+              onChangeText={setEmail}
+              autoCapitalize="none"
+              keyboardType="email-address"
+            />
+          </View>
+          <View>
+            <Text style={{ ...typography.badge, color: colors.textSecondary, marginBottom: 6, textTransform: "uppercase", letterSpacing: 0.5 }}>
+              Contraseña
+            </Text>
+            <TextInput
+              placeholder="Mínimo 6 caracteres"
+              placeholderTextColor={colors.textVeryMuted}
+              secureTextEntry
+              style={{
+                backgroundColor: colors.white,
+                borderRadius: 14,
+                paddingHorizontal: 16,
+                paddingVertical: 14,
+                fontSize: 15,
+                color: colors.text,
+                borderWidth: 1,
+                borderColor: colors.border,
+              }}
+              value={password}
+              onChangeText={setPassword}
+            />
+          </View>
         </View>
 
         {errorMessage ? (
-          <Text style={{ color: "red", marginTop: 12 }}>{errorMessage}</Text>
+          <View
+            style={{
+              backgroundColor: colors.errorBg,
+              borderRadius: 12,
+              padding: 12,
+              marginTop: 16,
+            }}
+          >
+            <Text style={{ fontSize: 13, color: colors.error, lineHeight: 18 }}>
+              {errorMessage}
+            </Text>
+          </View>
         ) : null}
 
         <Pressable
           onPress={isRegister ? handleRegister : handleLogin}
-          style={btnStyle}
+          disabled={loading}
+          style={{
+            marginTop: 24,
+            backgroundColor: colors.primary,
+            borderRadius: 14,
+            paddingVertical: 16,
+            alignItems: "center",
+            opacity: loading ? 0.7 : 1,
+          }}
         >
           {loading ? (
             <ActivityIndicator color="#fff" />
           ) : (
-            <Text style={{ color: "#fff" }}>
-              {isRegister ? "Registrarse" : "Ingresar"}
+            <Text
+              style={{
+                fontSize: 16,
+                fontWeight: "800",
+                color: "#fff",
+              }}
+            >
+              {isRegister ? "Crear cuenta" : "Iniciar sesión"}
             </Text>
           )}
         </Pressable>
 
-        <Pressable onPress={() => setMode(isRegister ? "login" : "register")}>
-          <Text style={{ marginTop: 16 }}>
-            {isRegister ? "Ya tengo cuenta" : "Crear cuenta"}
+        <Pressable
+          onPress={() => {
+            setMode(isRegister ? "login" : "register");
+            setErrorMessage("");
+          }}
+          style={{ marginTop: 20, alignItems: "center" }}
+        >
+          <Text style={{ fontSize: 14, color: colors.textSecondary }}>
+            {isRegister ? "¿Ya tienes cuenta? " : "¿No tienes cuenta? "}
+            <Text style={{ color: colors.primary, fontWeight: "700" }}>
+              {isRegister ? "Inicia sesión" : "Regístrate"}
+            </Text>
           </Text>
         </Pressable>
       </View>
     </KeyboardAvoidingView>
   );
 }
-
-const inputStyle = {
-  borderWidth: 1,
-  padding: 12,
-  borderRadius: 8,
-};
-
-const btnStyle = {
-  marginTop: 20,
-  backgroundColor: "#2563EB",
-  padding: 14,
-  borderRadius: 8,
-  alignItems: "center" as const,
-};

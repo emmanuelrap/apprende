@@ -1,3 +1,4 @@
+import { colors, borderRadius, shadows, typography } from "@/src/theme";
 import { Image, Text, TouchableOpacity, View } from "react-native";
 
 type BookCategory = { id: string; name: string };
@@ -21,29 +22,16 @@ type Book = {
   status: "new" | "reading" | "completed" | "paused";
 };
 
-const TEAL = "#078F83";
-
 const DIFFICULTY: Record<number, string> = {
   1: "A1", 2: "A2", 3: "B1", 4: "B2", 5: "C1", 6: "C2",
 };
 
 const STATUS_CONFIG = {
-  new: { label: "Nuevo", bg: "#E8F5F3", text: TEAL, icon: "✨" },
-  reading: { label: "Leyendo", bg: "#EFF6FF", text: "#3B82F6", icon: "📖" },
-  completed: { label: "Completado", bg: "#F0FDF4", text: "#16A34A", icon: "✅" },
-  paused: { label: "Pausado", bg: "#FEF9C3", text: "#CA8A04", icon: "⏸" },
+  new: { label: "Nuevo", bg: colors.primaryBg, text: colors.primary, icon: "✨" },
+  reading: { label: "Leyendo", bg: colors.readingBg, text: colors.reading, icon: "📖" },
+  completed: { label: "Completado", bg: colors.successBg, text: colors.success, icon: "✅" },
+  paused: { label: "Pausado", bg: colors.warningBg, text: "#CA8A04", icon: "⏸" },
 } as const;
-
-const COVER_COLORS = [
-  ["#078F83", "#056860"],
-  ["#6366F1", "#4F46E5"],
-  ["#E11D48", "#BE123C"],
-  ["#D97706", "#B45309"],
-  ["#7C3AED", "#6D28D9"],
-  ["#0891B2", "#0E7490"],
-  ["#059669", "#047857"],
-  ["#DB2777", "#BE185D"],
-];
 
 function CoverPlaceholder({
   title,
@@ -54,7 +42,7 @@ function CoverPlaceholder({
   difficulty: number;
   cover?: string | null;
 }) {
-  const [top, bottom] = COVER_COLORS[difficulty % COVER_COLORS.length];
+  const [top, bottom] = colors.coverColors[difficulty % colors.coverColors.length];
   const initial = title.charAt(0).toUpperCase();
 
   if (cover) {
@@ -121,20 +109,16 @@ export function BookCard({
     <TouchableOpacity
       onPress={locked ? undefined : onPress}
       activeOpacity={locked ? 1 : 0.85}
-      style={{
-        backgroundColor: locked ? "#F8FAFC" : "#FFFFFF",
-        borderRadius: 20,
-        padding: 14,
-        marginBottom: 12,
-        flexDirection: "row",
-        gap: 14,
-        shadowColor: "#000",
-        shadowOpacity: 0.04,
-        shadowRadius: 10,
-        shadowOffset: { width: 0, height: 2 },
-        elevation: 2,
-        opacity: locked ? 0.65 : 1,
-      }}
+        style={{
+          backgroundColor: locked ? colors.bg : colors.white,
+          borderRadius: 20,
+          padding: 14,
+          marginBottom: 12,
+          flexDirection: "row",
+          gap: 14,
+          ...shadows.card,
+          opacity: locked ? 0.65 : 1,
+        }}
     >
       <CoverPlaceholder title={book.title} difficulty={book.difficulty} cover={book.cover} />
 
@@ -142,14 +126,14 @@ export function BookCard({
         <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" }}>
           <View style={{ flex: 1, marginRight: 8 }}>
             <Text
-              style={{ fontWeight: "700", fontSize: 15, color: "#0F172A" }}
+              style={{ fontWeight: "700", fontSize: 15, color: colors.text }}
               numberOfLines={1}
             >
               {book.title}
             </Text>
             {book.author && (
               <Text
-                style={{ fontSize: 12, color: "#64748B", marginTop: 1 }}
+                style={{ fontSize: 12, color: colors.textSecondary, marginTop: 1 }}
                 numberOfLines={1}
               >
                 {book.author}
@@ -157,7 +141,7 @@ export function BookCard({
             )}
             {book.description && (
               <Text
-                style={{ fontSize: 12, color: "#64748B", marginTop: 4, lineHeight: 16 }}
+                style={{ fontSize: 12, color: colors.textSecondary, marginTop: 4, lineHeight: 16 }}
                 numberOfLines={2}
               >
                 {book.description}
@@ -190,13 +174,13 @@ export function BookCard({
               <View
                 key={tag.id}
                 style={{
-                  backgroundColor: "#F0FDF4",
+                  backgroundColor: colors.successBg,
                   borderRadius: 6,
                   paddingHorizontal: 7,
                   paddingVertical: 2,
                 }}
               >
-                <Text style={{ fontSize: 10, color: "#16A34A", fontWeight: "600" }}>
+                <Text style={{ fontSize: 10, color: colors.success, fontWeight: "600" }}>
                   {tag.name}
                 </Text>
               </View>
@@ -205,13 +189,13 @@ export function BookCard({
               <View
                 key={cat.id}
                 style={{
-                  backgroundColor: "#EEF2FF",
+                  backgroundColor: colors.readingBg,
                   borderRadius: 6,
                   paddingHorizontal: 7,
                   paddingVertical: 2,
                 }}
               >
-                <Text style={{ fontSize: 10, color: "#6366F1", fontWeight: "600" }}>
+                <Text style={{ fontSize: 10, color: colors.reading, fontWeight: "600" }}>
                   {cat.name}
                 </Text>
               </View>
@@ -221,16 +205,16 @@ export function BookCard({
 
         {/* Meta row */}
         <View style={{ flexDirection: "row", gap: 12 }}>
-          <Text style={{ fontSize: 11, color: "#94A3B8" }}>
+          <Text style={{ fontSize: 11, color: colors.textMuted }}>
             📄 {book.totalPages ?? "-"} pág
           </Text>
-          <Text style={{ fontSize: 11, color: "#94A3B8" }}>
+          <Text style={{ fontSize: 11, color: colors.textMuted }}>
             ⏱ {book.estimatedMinutes ?? "-"} min
           </Text>
-          <Text style={{ fontSize: 11, color: "#94A3B8" }}>
+          <Text style={{ fontSize: 11, color: colors.textMuted }}>
             📖 {DIFFICULTY[book.difficulty] ?? "-"}
           </Text>
-          <Text style={{ fontSize: 11, color: "#94A3B8" }}>
+          <Text style={{ fontSize: 11, color: colors.textMuted }}>
             ⭐ {book.xp} XP
           </Text>
         </View>
@@ -250,7 +234,7 @@ export function BookCard({
             }}
           >
             <Text style={{ fontSize: 12 }}>🔒</Text>
-            <Text style={{ fontSize: 11, color: "#DC2626", fontWeight: "600" }}>
+            <Text style={{ fontSize: 11, color: colors.error, fontWeight: "600" }}>
               Necesitas nivel {book.minLevel}+
             </Text>
           </View>
@@ -262,7 +246,7 @@ export function BookCard({
             <View
               style={{
                 height: 6,
-                backgroundColor: "#F1F5F9",
+                backgroundColor: colors.border,
                 borderRadius: 3,
                 overflow: "hidden",
               }}
@@ -272,12 +256,12 @@ export function BookCard({
                   height: 6,
                   borderRadius: 3,
                   backgroundColor:
-                    book.status === "completed" ? "#16A34A" : TEAL,
+                    book.status === "completed" ? "#16A34A" : colors.primary,
                   width: `${book.progress}%`,
                 }}
               />
             </View>
-            <Text style={{ fontSize: 10, color: "#94A3B8", marginTop: 4 }}>
+            <Text style={{ fontSize: 10, color: colors.textMuted, marginTop: 4 }}>
               {book.status === "completed"
                 ? "Completado"
                 : `${book.progress}% · página ${book.currentPage}`}

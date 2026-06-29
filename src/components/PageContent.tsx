@@ -1,11 +1,15 @@
+import { colors } from "@/src/theme";
 import type { Theme } from "@/src/theme";
 import { THEME_COLORS } from "@/src/theme";
 import { useAuthStore } from "@/src/store/authStore";
 import { useVocabularyStore } from "@/src/store/vocabularyStore";
+import { usePrefsStore } from "@/src/store/prefsStore";
 import { useState } from "react";
-import { Modal, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, Modal, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { translateText } from "@/src/services/translate";
+import type { SentenceInfo } from "@/src/services/sentences";
 
-type Language = "es" | "en";
+type Language = "es" | "en" | "fr";
 
 type Props = {
   content: string;
@@ -15,11 +19,15 @@ type Props = {
   readonly?: boolean;
   activeParagraph: number | null;
   onParagraphPress: (index: number | null) => void;
+  onSentencePress?: (sentenceGlobalIndex: number) => void;
   fontSize?: number;
   theme?: Theme;
-  boldEnabled: boolean;
-  lineSpacing: number;
-  fontFamily: string | undefined;
+  boldEnabled?: boolean;
+  lineSpacing?: number;
+  fontFamily?: string;
+  textAlign?: "left" | "center" | "right" | "justify";
+  sentences?: SentenceInfo[];
+  activeSentenceIndex?: number | null;
 };
 
 type SaveItem = {
@@ -27,6 +35,89 @@ type SaveItem = {
   content: string;
   context: string;
 };
+
+function HighlightedText({
+  paragraph,
+  activeSentence,
+  theme,
+  fontSize,
+  lineSpacing = 0,
+  boldEnabled,
+  fontFamily,
+  textAlign,
+  readonly,
+  paragraphIndex,
+  sentences,
+  onSentencePress,
+  onWordLongPress,
+}: {
+  paragraph: string;
+  activeSentence: string | null;
+  theme: Theme;
+  fontSize: number;
+  lineSpacing?: number;
+  boldEnabled?: boolean;
+  fontFamily?: string;
+  textAlign?: "left" | "center" | "right" | "justify";
+  readonly?: boolean;
+  paragraphIndex?: number;
+  sentences?: SentenceInfo[] | null;
+  onSentencePress?: ((sentenceGlobalIndex: number) => void) | null;
+  onWordLongPress: (word: string) => void;
+}) {
+  const words = paragraph.split(" ");
+  const highlightColor = THEME_COLORS[theme].highlight;
+
+  return (
+    <Text style={{ lineHeight: fontSize + lineSpacing, fontSize, color: THEME_COLORS[theme].text, fontWeight: boldEnabled ? "bold" : "normal", fontFamily: fontFamily ?? undefined, textAlign }}>
+      {words.map((word, wIndex) => {
+        const inActiveSentence = activeSentence && paragraph.includes(activeSentence);
+        let isSentenceHighlight = false;
+        if (inActiveSentence) {
+          const startIdx = paragraph.indexOf(activeSentence);
+          const endIdx = startIdx + activeSentence.length;
+          const wordStart = words.slice(0, wIndex).join(" ").length + (wIndex > 0 ? 1 : 0);
+          const wordEnd = wordStart + word.length;
+          isSentenceHighlight = wordStart >= startIdx && wordEnd <= endIdx;
+        }
+
+        return (
+          <Text
+            key={wIndex}
+            onPress={() => {
+              if (readonly || !onSentencePress || sentences == null || paragraphIndex == null) return;
+              const wordStart = words.slice(0, wIndex).join(" ").length + (wIndex > 0 ? 1 : 0);
+              const wordEnd = wordStart + word.length;
+              const found = sentences.find(
+                (s) =>
+                  s.paragraphIndex === paragraphIndex &&
+                  paragraph.indexOf(s.text) >= 0 &&
+                  wordStart >= paragraph.indexOf(s.text) &&
+                  wordEnd <= paragraph.indexOf(s.text) + s.text.length,
+              );
+              if (found) {
+                onSentencePress(found.globalIndex);
+              }
+            }}
+            onLongPress={() => {
+              if (readonly) return;
+              onWordLongPress(word.replace(/[^a-zA-ZáéíóúñüÁÉÍÓÚÑÜ']/g, ""));
+            }}
+            style={{
+              color: THEME_COLORS[theme].text,
+              backgroundColor: isSentenceHighlight
+                ? highlightColor
+                : "transparent",
+            }}
+          >
+            {word}
+            {wIndex < words.length - 1 ? " " : ""}
+          </Text>
+        );
+      })}
+    </Text>
+  );
+}
 
 export function PageContent({
   content,
@@ -36,18 +127,24 @@ export function PageContent({
   readonly = false,
   activeParagraph,
   onParagraphPress,
+  onSentencePress,
   fontSize = 16,
   theme = "light",
   boldEnabled,
   lineSpacing,
   fontFamily,
+  textAlign = "justify",
+  sentences,
+  activeSentenceIndex,
 }: Props) {
   const user = useAuthStore((state) => state.user);
   const addItem = useVocabularyStore((state) => state.addItem);
+  const nativeLang = usePrefsStore((s) => s.nativeLanguage);
 
   const [modal, setModal] = useState(false);
   const [saveItem, setSaveItem] = useState<SaveItem | null>(null);
   const [translation, setTranslation] = useState("");
+  const [translating, setTranslating] = useState(false);
   const [saving, setSaving] = useState(false);
 
   const paragraphs = content
@@ -59,6 +156,13 @@ export function PageContent({
     setSaveItem(item);
     setTranslation("");
     setModal(true);
+    if (item.type === "word" && nativeLang && nativeLang !== language) {
+      setTranslating(true);
+      translateText(item.content, language, nativeLang).then((t) => {
+        setTranslation(t);
+        setTranslating(false);
+      });
+    }
   };
 
   const handleSave = async () => {
@@ -76,52 +180,55 @@ export function PageContent({
     setModal(false);
   };
 
+  const activeSentence =
+    sentences && activeSentenceIndex != null
+      ? sentences.find((s) => s.globalIndex === activeSentenceIndex) ?? null
+      : null;
+
   return (
     <>
       <View>
         {paragraphs.map((paragraph, pIndex) => {
-          const words = paragraph.split(" ");
           const isActive = activeParagraph === pIndex;
+          const isSentenceInThisParagraph =
+            activeSentence?.paragraphIndex === pIndex;
+          const sentenceText = isSentenceInThisParagraph
+            ? activeSentence!.text
+            : null;
 
           return (
             <TouchableOpacity
               key={pIndex}
               onPress={() => onParagraphPress(pIndex)}
-              onLongPress={() => {
-                if (readonly) return;
-                openModal({
-                  type: "sentence",
-                  content: paragraph,
-                  context: paragraph,
-                });
-              }}
-              delayLongPress={400}
               activeOpacity={1}
-              className="p-2 "
+              style={{
+                backgroundColor: isActive && !sentenceText
+                  ? THEME_COLORS[theme].highlight
+                  : "transparent",
+                borderRadius: 4,
+              }}
             >
-              <Text style={{ lineHeight: fontSize + lineSpacing, fontSize, color: THEME_COLORS[theme].text, fontWeight: boldEnabled ? "bold" : "normal", fontFamily: fontFamily ?? undefined }}>
-                {words.map((word, wIndex) => (
-                  <Text
-                    key={wIndex}
-                    onPress={() => onParagraphPress(pIndex)}
-                    onLongPress={() => {
-                      if (readonly) return;
-                      openModal({
-                        type: "word",
-                        content: word.replace(/[^a-zA-ZáéíóúñüÁÉÍÓÚÑÜ']/g, ""),
-                        context: paragraph,
-                      });
-                    }}
-                    style={{
-                      color: THEME_COLORS[theme].text,
-                      backgroundColor: isActive ? THEME_COLORS[theme].highlight : "transparent",
-                    }}
-                  >
-                    {word}
-                    {wIndex < words.length - 1 ? " " : ""}
-                  </Text>
-                ))}
-              </Text>
+              <HighlightedText
+                paragraph={paragraph}
+                activeSentence={sentenceText}
+                theme={theme}
+                fontSize={fontSize}
+                lineSpacing={lineSpacing}
+                boldEnabled={boldEnabled}
+                fontFamily={fontFamily}
+                textAlign={textAlign}
+                readonly={readonly}
+                paragraphIndex={pIndex}
+                sentences={sentences ?? null}
+                onSentencePress={onSentencePress ?? null}
+                onWordLongPress={(word) =>
+                  openModal({
+                    type: "word",
+                    content: word,
+                    context: paragraph,
+                  })
+                }
+              />
             </TouchableOpacity>
           );
         })}
@@ -144,56 +251,83 @@ export function PageContent({
               padding: 24,
             }}
           >
-            <Text style={{ fontSize: 12, color: "#94A3B8", marginBottom: 4 }}>
+            <Text style={{ fontSize: 12, color: colors.textMuted, marginBottom: 4 }}>
               {saveItem?.type === "word" ? "Palabra" : "Oración"}
             </Text>
             <Text
               style={{
                 fontSize: 18,
                 fontWeight: "700",
-                color: "#1E293B",
+                color: colors.text,
                 marginBottom: 16,
               }}
             >
               {saveItem?.content}
             </Text>
 
-            {saveItem?.type === "word" && (
-              <>
-                <Text
-                  style={{ fontSize: 13, color: "#64748B", marginBottom: 4 }}
-                >
-                  Contexto
-                </Text>
-                <Text
-                  style={{
-                    fontSize: 13,
-                    color: "#94A3B8",
-                    marginBottom: 16,
-                    fontStyle: "italic",
-                  }}
-                >
-                  {saveItem.context}
-                </Text>
-              </>
-            )}
+              {saveItem?.type === "word" && (
+                <>
+                  <Text
+                    style={{ fontSize: 13, color: colors.textSecondary, marginBottom: 4 }}
+                  >
+                    Contexto
+                  </Text>
+                  <Text
+                    style={{
+                      fontSize: 13,
+                      color: colors.textMuted,
+                      marginBottom: 16,
+                      fontStyle: "italic",
+                      lineHeight: 18,
+                    }}
+                  >
+                    {(() => {
+                      const word = saveItem.content;
+                      const ctx = saveItem.context;
+                      const idx = ctx.toLowerCase().indexOf(word.toLowerCase());
+                      if (idx === -1) return ctx;
+                      return (
+                        <>
+                          {ctx.slice(0, idx)}
+                          <Text style={{ fontWeight: "800", color: colors.text }}>
+                            {ctx.slice(idx, idx + word.length)}
+                          </Text>
+                          {ctx.slice(idx + word.length)}
+                        </>
+                      );
+                    })()}
+                  </Text>
+                </>
+              )}
 
-            <Text style={{ fontSize: 13, color: "#64748B", marginBottom: 6 }}>
-              Traducción (opcional)
+            <Text style={{ fontSize: 13, color: colors.textSecondary, marginBottom: 6 }}>
+              Traducción
             </Text>
-            <TextInput
-              placeholder="Escribe la traducción..."
-              value={translation}
-              onChangeText={setTranslation}
-              style={{
-                borderWidth: 1,
-                borderColor: "#E2E8F0",
-                borderRadius: 10,
-                padding: 12,
-                marginBottom: 16,
-                fontSize: 15,
-              }}
-            />
+            <View style={{ position: "relative" }}>
+              <TextInput
+                placeholder={translating ? "Traduciendo..." : "Escribe la traducción..."}
+                value={translation}
+                onChangeText={setTranslation}
+                editable={!translating}
+                style={{
+                  borderWidth: 1,
+                  borderColor: translating ? colors.primary : colors.border,
+                  borderRadius: 10,
+                  padding: 12,
+                  marginBottom: 16,
+                  fontSize: 15,
+                  paddingRight: translating ? 40 : 12,
+                  color: translating ? colors.textMuted : colors.text,
+                }}
+              />
+              {translating && (
+                <ActivityIndicator
+                  size="small"
+                  color={colors.primary}
+                  style={{ position: "absolute", right: 12, top: 14 }}
+                />
+              )}
+            </View>
 
             <View style={{ flexDirection: "row", gap: 10 }}>
               <TouchableOpacity
@@ -203,11 +337,11 @@ export function PageContent({
                   padding: 14,
                   borderRadius: 12,
                   borderWidth: 1,
-                  borderColor: "#E2E8F0",
+                  borderColor: colors.border,
                   alignItems: "center",
                 }}
               >
-                <Text style={{ color: "#64748B" }}>Cancelar</Text>
+                <Text style={{ color: colors.textSecondary }}>Cancelar</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -217,7 +351,7 @@ export function PageContent({
                   flex: 1,
                   padding: 14,
                   borderRadius: 12,
-                  backgroundColor: "#6366F1",
+                  backgroundColor: colors.primary,
                   alignItems: "center",
                 }}
               >
