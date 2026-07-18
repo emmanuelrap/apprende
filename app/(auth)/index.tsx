@@ -11,6 +11,8 @@ import {
   View,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
+import * as WebBrowser from "expo-web-browser";
+import * as Linking from "expo-linking";
 import { supabase } from "../../src/services/supabase";
 
 export default function AuthScreen() {
@@ -111,6 +113,69 @@ export default function AuthScreen() {
     } catch (error) {
       setErrorMessage(
         error instanceof Error ? error.message : "No se pudo iniciar sesion.",
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    try {
+      setLoading(true);
+      setErrorMessage("");
+
+      if (Platform.OS === "web") {
+        const { error } = await supabase.auth.signInWithOAuth({
+          provider: "google",
+          options: {
+            redirectTo: window.location.origin,
+          },
+        });
+        if (error) throw error;
+        return;
+      }
+
+      const redirectTo = Linking.createURL("auth/callback");
+
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: { redirectTo },
+      });
+
+      if (error) throw error;
+      if (!data?.url) throw new Error("No se pudo conectar con Google.");
+
+      const result = await WebBrowser.openAuthSessionAsync(
+        data.url,
+        redirectTo,
+      );
+
+      if (result.type !== "success") return;
+
+      const hash = result.url.split("#")[1];
+      if (!hash) throw new Error("No se recibió el token de acceso.");
+
+      const params = Object.fromEntries(
+        hash.split("&").map((p) => {
+          const [k, v] = p.split("=");
+          return [k, decodeURIComponent(v)];
+        }),
+      );
+
+      if (!params.access_token)
+        throw new Error("Token de acceso no encontrado.");
+
+      const { error: sessionError } = await supabase.auth.setSession({
+        access_token: params.access_token,
+        refresh_token: params.refresh_token || "",
+      });
+
+      if (sessionError) throw sessionError;
+
+      router.replace("/home");
+    } catch (error) {
+      setErrorMessage(
+        error instanceof Error ? error.message : "Error al iniciar con Google.",
       );
     } finally {
       setLoading(false);
@@ -297,6 +362,44 @@ export default function AuthScreen() {
               {isRegister ? "Crear cuenta" : "Iniciar sesión"}
             </Text>
           )}
+        </Pressable>
+
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            marginTop: 24,
+            gap: 12,
+          }}
+        >
+          <View style={{ flex: 1, height: 1, backgroundColor: colors.border }} />
+          <Text style={{ fontSize: 13, color: colors.textMuted }}>o</Text>
+          <View style={{ flex: 1, height: 1, backgroundColor: colors.border }} />
+        </View>
+
+        <Pressable
+          onPress={handleGoogleSignIn}
+          disabled={loading}
+          style={{
+            marginTop: 16,
+            backgroundColor: colors.white,
+            borderRadius: 14,
+            paddingVertical: 14,
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "center",
+            borderWidth: 1,
+            borderColor: colors.border,
+            gap: 10,
+            opacity: loading ? 0.7 : 1,
+          }}
+        >
+          <Text style={{ fontSize: 18, fontWeight: "500", color: "#5F6368" }}>
+            G
+          </Text>
+          <Text style={{ fontSize: 15, fontWeight: "600", color: "#5F6368" }}>
+            Continuar con Google
+          </Text>
         </Pressable>
 
         <Pressable
