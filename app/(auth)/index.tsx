@@ -15,6 +15,22 @@ import * as WebBrowser from "expo-web-browser";
 import * as Linking from "expo-linking";
 import { supabase } from "../../src/services/supabase";
 
+const ERROR_MESSAGES: Record<string, string> = {
+  "Invalid login credentials": "Email o contraseña incorrectos.",
+  "Email not confirmed": "Confirma tu email antes de iniciar sesión.",
+  "User already registered": "Ya hay una cuenta con este email.",
+  "Password should be at least 6 characters": "La contraseña debe tener al menos 6 caracteres.",
+  "Email rate limit exceeded": "Demasiados intentos. Espera un momento e intenta de nuevo.",
+  "sign_up_disabled": "El registro está desactivado por ahora.",
+  "New email address cannot be the same as the old email address": "El nuevo email debe ser diferente al actual.",
+};
+
+function friendlyError(error: unknown): string {
+  if (!error) return "";
+  const msg = typeof error === "string" ? error : (error as any)?.message ?? "";
+  return ERROR_MESSAGES[msg] || msg || "Ocurrió un error inesperado.";
+}
+
 export default function AuthScreen() {
   const router = useRouter();
 
@@ -63,7 +79,7 @@ export default function AuthScreen() {
       });
 
       if (error) {
-        setErrorMessage(error.message);
+        setErrorMessage(friendlyError(error.message));
         return;
       }
 
@@ -79,9 +95,7 @@ export default function AuthScreen() {
 
       router.replace("/home");
     } catch (error) {
-      setErrorMessage(
-        error instanceof Error ? error.message : "No se pudo crear la cuenta.",
-      );
+      setErrorMessage(friendlyError(error));
     } finally {
       setLoading(false);
     }
@@ -105,15 +119,13 @@ export default function AuthScreen() {
       });
 
       if (error) {
-        setErrorMessage(error.message);
+        setErrorMessage(friendlyError(error.message));
         return;
       }
 
       router.replace("/home");
     } catch (error) {
-      setErrorMessage(
-        error instanceof Error ? error.message : "No se pudo iniciar sesion.",
-      );
+      setErrorMessage(friendlyError(error));
     } finally {
       setLoading(false);
     }
@@ -174,9 +186,7 @@ export default function AuthScreen() {
 
       router.replace("/home");
     } catch (error) {
-      setErrorMessage(
-        error instanceof Error ? error.message : "Error al iniciar con Google.",
-      );
+      setErrorMessage(friendlyError(error));
     } finally {
       setLoading(false);
     }

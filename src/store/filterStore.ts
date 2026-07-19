@@ -34,6 +34,8 @@ export const useFilterStore = create<FilterStore>((set) => ({
         supabase.from("book_tags").select("*"),
       ]);
       set({ categories: categories ?? [], tags: tags ?? [] });
+    } catch (e) {
+      console.error("[Filters] Error fetching filters:", e);
     } finally {
       set({ isLoading: false });
     }

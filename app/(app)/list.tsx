@@ -26,23 +26,27 @@ export default function ListScreen() {
 
   useEffect(() => {
     if (!user?.id) return;
-    import("@/src/services/favorites").then(({ getFavorites }) =>
-      getFavorites(user.id).then((ids) => setFavIds(new Set(ids))),
-    );
+    import("@/src/services/favorites")
+      .then(({ getFavorites }) =>
+        getFavorites(user.id).then((ids) => setFavIds(new Set(ids))),
+      )
+      .catch(() => {});
   }, [user?.id]);
 
   useEffect(() => {
     if (!user?.id) return;
-    import("@/src/services/supabase").then(({ supabase }) =>
-      supabase
-        .from("user_books")
-        .select("book_id")
-        .eq("user_id", user.id)
-        .eq("status", "reading")
-        .then(({ data }) =>
-          setReadingBookIds(new Set((data ?? []).map((r) => r.book_id))),
-        ),
-    );
+    import("@/src/services/supabase")
+      .then(({ supabase }) =>
+        supabase
+          .from("user_books")
+          .select("book_id")
+          .eq("user_id", user.id)
+          .eq("status", "reading")
+          .then(({ data }) =>
+            setReadingBookIds(new Set((data ?? []).map((r) => r.book_id))),
+          ),
+      )
+      .catch(() => {});
   }, [user?.id]);
 
   const label = useMemo(() => {

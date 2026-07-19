@@ -915,10 +915,11 @@ export function BookDetailScreen({ bookId }: Props) {
 
   useEffect(() => {
     if (user) {
-      getFavorites(user.id).then((ids) => setIsFav(ids.includes(bookId)));
+      getFavorites(user.id).then((ids) => setIsFav(ids.includes(bookId))).catch(() => {});
     }
     getBookVocabulary(bookId)
       .then(setVocab)
+      .catch(() => {})
       .finally(() => setVocabLoading(false));
   }, [user, bookId]);
 

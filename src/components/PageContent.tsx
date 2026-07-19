@@ -19,7 +19,7 @@ type Props = {
   readonly?: boolean;
   activeParagraph: number | null;
   onParagraphPress: (index: number | null) => void;
-  onSentencePress?: (sentenceGlobalIndex: number) => void;
+  onSentencePress?: (sentenceGlobalIndex: number, paragraphIndex?: number) => void;
   fontSize?: number;
   theme?: Theme;
   boldEnabled?: boolean;
@@ -62,7 +62,7 @@ function HighlightedText({
   readonly?: boolean;
   paragraphIndex?: number;
   sentences?: SentenceInfo[] | null;
-  onSentencePress?: ((sentenceGlobalIndex: number) => void) | null;
+  onSentencePress?: ((sentenceGlobalIndex: number, paragraphIndex?: number) => void) | null;
   onWordLongPress: (word: string) => void;
 }) {
   const words = paragraph.split(" ");
@@ -96,7 +96,7 @@ function HighlightedText({
                   wordEnd <= paragraph.indexOf(s.text) + s.text.length,
               );
               if (found) {
-                onSentencePress(found.globalIndex);
+                onSentencePress(found.globalIndex, paragraphIndex);
               }
             }}
             onLongPress={() => {
@@ -201,13 +201,19 @@ export function PageContent({
               key={pIndex}
               onPress={() => onParagraphPress(pIndex)}
               activeOpacity={1}
-              style={{
-                backgroundColor: isActive && !sentenceText
-                  ? THEME_COLORS[theme].highlight
-                  : "transparent",
-                borderRadius: 4,
-              }}
+              style={{ borderRadius: 4 }}
             >
+              <View
+                style={{
+                  backgroundColor: isActive && !sentenceText
+                    ? THEME_COLORS[theme].highlight
+                    : "transparent",
+                  borderRadius: 4,
+                  borderLeftWidth: isActive ? 3 : 0,
+                  borderLeftColor: THEME_COLORS[theme].highlight,
+                  paddingLeft: isActive ? 8 : 11,
+                }}
+              >
               <HighlightedText
                 paragraph={paragraph}
                 activeSentence={sentenceText}
@@ -229,6 +235,7 @@ export function PageContent({
                   })
                 }
               />
+              </View>
             </TouchableOpacity>
           );
         })}

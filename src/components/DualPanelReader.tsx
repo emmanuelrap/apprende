@@ -15,7 +15,7 @@ type Props = {
   pageId: string;
   activeParagraph: number | null;
   onParagraphPress: (index: number | null) => void;
-  onSentencePress?: (sentenceGlobalIndex: number) => void;
+  onSentencePress?: (sentenceGlobalIndex: number, paragraphIndex?: number) => void;
   fontSize: number;
   theme: Theme;
   boldEnabled: boolean;
@@ -25,6 +25,8 @@ type Props = {
   textAlign: "left" | "center" | "right" | "justify";
   sentences?: SentenceInfo[];
   activeSentenceIndex?: number | null;
+  sentencesBottom?: SentenceInfo[];
+  activeSentenceIndexBottom?: number | null;
 };
 
 export function DualPanelReader({
@@ -46,6 +48,8 @@ export function DualPanelReader({
   textAlign,
   sentences,
   activeSentenceIndex,
+  sentencesBottom,
+  activeSentenceIndexBottom,
 }: Props) {
   const colors = THEME_COLORS[theme];
 
@@ -98,6 +102,8 @@ export function DualPanelReader({
             lineSpacing={lineSpacing}
             fontFamily={fontFamily}
             textAlign={textAlign}
+            sentences={sentencesBottom ?? sentences}
+            activeSentenceIndex={activeSentenceIndexBottom ?? activeSentenceIndex}
           />
         </ScrollView>
       </View>

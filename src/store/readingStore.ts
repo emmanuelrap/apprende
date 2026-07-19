@@ -95,6 +95,8 @@ export const useReadingStore = create<ReadingStore>((set) => ({
         .select("*")
         .eq("user_id", userId);
       set({ userBooks: data ?? [] });
+    } catch (e) {
+      console.error("[Reading] Error fetching user books:", e);
     } finally {
       set({ isLoading: false });
     }
@@ -121,51 +123,62 @@ export const useReadingStore = create<ReadingStore>((set) => ({
       const en = content?.find((c) => c.language === "en")?.content ?? "";
       const fr = content?.find((c) => c.language === "fr")?.content ?? "";
       set({ currentContent: { es, en, fr }, currentPage: pageNumber });
+    } catch (e) {
+      console.error("[Reading] Error fetching page content:", e);
     } finally {
       set({ isLoading: false });
     }
   },
 
   saveSession: async (userId, bookId, minutes, pages, xp) => {
-    await supabase.from("reading_sessions").insert({
-      user_id: userId,
-      book_id: bookId,
-      minutes,
-      pages,
-      xp,
-    });
-    await supabase.from("xp_events").insert({
-      user_id: userId,
-      amount: xp,
-      source: "reading",
-    });
-    const { data: profile } = await supabase
-      .from("profiles").select("xp").eq("id", userId).single();
-    if (profile) {
-      await supabase.from("profiles").update({ xp: profile.xp + xp }).eq("id", userId);
+    try {
+      await supabase.from("reading_sessions").insert({
+        user_id: userId,
+        book_id: bookId,
+        minutes,
+        pages,
+        xp,
+      });
+      await supabase.from("xp_events").insert({
+        user_id: userId,
+        amount: xp,
+        source: "reading",
+      });
+      const { data: profile } = await supabase
+        .from("profiles").select("xp").eq("id", userId).single();
+      if (profile) {
+        await supabase.from("profiles").update({ xp: profile.xp + xp }).eq("id", userId);
+      }
+    } catch (e) {
+      console.error("[Reading] Error saving session:", e);
     }
   },
 
   initReader: async (bookId, userId) => {
-    const [{ count }, { data: book }, { data: profile }] = await Promise.all([
-      supabase
-        .from("book_pages")
-        .select("*", { count: "exact", head: true })
-        .eq("book_id", bookId),
-      supabase
-        .from("books")
-        .select("title, xp_base, difficulty")
-        .eq("id", bookId)
-        .single(),
-      supabase.from("profiles").select("xp").eq("id", userId).single(),
-    ]);
+    try {
+      const [{ count }, { data: book }, { data: profile }] = await Promise.all([
+        supabase
+          .from("book_pages")
+          .select("*", { count: "exact", head: true })
+          .eq("book_id", bookId),
+        supabase
+          .from("books")
+          .select("title, xp_base, difficulty")
+          .eq("id", bookId)
+          .single(),
+        supabase.from("profiles").select("xp").eq("id", userId).single(),
+      ]);
 
-    return {
-      totalPages: count ?? 0,
-      bookXp: (book?.xp_base ?? 10) * (book?.difficulty ?? 1),
-      bookTitle: book?.title ?? "",
-      xpBefore: profile?.xp ?? 0,
-    };
+      return {
+        totalPages: count ?? 0,
+        bookXp: (book?.xp_base ?? 10) * (book?.difficulty ?? 1),
+        bookTitle: book?.title ?? "",
+        xpBefore: profile?.xp ?? 0,
+      };
+    } catch (e) {
+      console.error("[Reading] Error initializing reader:", e);
+      return { totalPages: 0, bookXp: 0, bookTitle: "", xpBefore: 0 };
+    }
   },
 
   getBookLanguages: async (bookId: string) => {
@@ -183,50 +196,58 @@ export const useReadingStore = create<ReadingStore>((set) => ({
   },
 
   saveProgress: async (userId, bookId, pageNumber, totalPages) => {
-    await supabase.from("user_books").upsert(
-      {
-        user_id: userId,
-        book_id: bookId,
-        current_page: pageNumber,
-        progress:
-          totalPages > 0 ? Math.round((pageNumber / totalPages) * 100) : 0,
-        status: "reading",
-      },
-      { onConflict: "user_id,book_id" },
-    );
+    try {
+      await supabase.from("user_books").upsert(
+        {
+          user_id: userId,
+          book_id: bookId,
+          current_page: pageNumber,
+          progress:
+            totalPages > 0 ? Math.round((pageNumber / totalPages) * 100) : 0,
+          status: "reading",
+        },
+        { onConflict: "user_id,book_id" },
+      );
+    } catch (e) {
+      console.error("[Reading] Error saving progress:", e);
+    }
   },
 
   finishBook: async (userId, bookId, bookXp, startTime, pagesRead) => {
-    await supabase.from("user_books").upsert(
-      {
+    try {
+      await supabase.from("user_books").upsert(
+        {
+          user_id: userId,
+          book_id: bookId,
+          current_page: 0,
+          status: "completed",
+          progress: 100,
+          completed_at: new Date().toISOString(),
+        },
+        { onConflict: "user_id,book_id" },
+      );
+
+      await supabase.from("reading_sessions").insert({
         user_id: userId,
         book_id: bookId,
-        current_page: 0,
-        status: "completed",
-        progress: 100,
-        completed_at: new Date().toISOString(),
-      },
-      { onConflict: "user_id,book_id" },
-    );
+        minutes: Math.floor((Date.now() - startTime) / 60000),
+        pages: pagesRead,
+        xp: bookXp,
+      });
 
-    await supabase.from("reading_sessions").insert({
-      user_id: userId,
-      book_id: bookId,
-      minutes: Math.floor((Date.now() - startTime) / 60000),
-      pages: pagesRead,
-      xp: bookXp,
-    });
-
-    await supabase.from("xp_events").insert({
-      user_id: userId,
-      amount: bookXp,
-      source: "book_completed",
-      reference_id: bookId,
-    });
-    const { data: profile } = await supabase
-      .from("profiles").select("xp").eq("id", userId).single();
-    if (profile) {
-      await supabase.from("profiles").update({ xp: profile.xp + bookXp }).eq("id", userId);
+      await supabase.from("xp_events").insert({
+        user_id: userId,
+        amount: bookXp,
+        source: "book_completed",
+        reference_id: bookId,
+      });
+      const { data: profile } = await supabase
+        .from("profiles").select("xp").eq("id", userId).single();
+      if (profile) {
+        await supabase.from("profiles").update({ xp: profile.xp + bookXp }).eq("id", userId);
+      }
+    } catch (e) {
+      console.error("[Reading] Error finishing book:", e);
     }
   },
 

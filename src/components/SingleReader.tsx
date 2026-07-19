@@ -13,7 +13,7 @@ type Props = {
   pageId: string;
   activeParagraph: number | null;
   onParagraphPress: (index: number | null) => void;
-  onSentencePress?: (sentenceGlobalIndex: number) => void;
+  onSentencePress?: (sentenceGlobalIndex: number, paragraphIndex?: number) => void;
   fontSize: number;
   theme: Theme;
   boldEnabled: boolean;

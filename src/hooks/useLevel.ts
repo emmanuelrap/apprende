@@ -20,7 +20,8 @@ export function useLevel(xp: number) {
       .order("level")
       .then(({ data }) => {
         setLevels(data ?? []);
-      });
+      })
+      .catch(() => {});
   }, []);
 
   if (!levels.length) return null;

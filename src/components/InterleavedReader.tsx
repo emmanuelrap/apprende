@@ -20,7 +20,7 @@ type Props = {
   pageId: string;
   activeParagraph: number | null;
   onParagraphPress: (index: number | null) => void;
-  onSentencePress?: (sentenceGlobalIndex: number) => void;
+  onSentencePress?: (sentenceGlobalIndex: number, paragraphIndex?: number) => void;
   fontSize: number;
   theme: Theme;
   boldEnabled: boolean;
@@ -132,7 +132,10 @@ export function InterleavedReader({
             const isTop = item.lang === langTop;
             const paraTopIdx = isTop ? topIdx++ : bottomIdx++;
             const words = item.text.split(" ");
-            const isActive = activeParagraph === pIndex;
+            const pairIndex = activeParagraph !== null
+              ? (activeParagraph % 2 === 0 ? activeParagraph + 1 : activeParagraph - 1)
+              : null;
+            const isActive = activeParagraph === pIndex || pairIndex === pIndex;
 
             const isSentenceInThisParagraph =
               isTop &&
@@ -147,14 +150,17 @@ export function InterleavedReader({
                 key={pIndex}
                 onPress={() => onParagraphPress(pIndex)}
                 activeOpacity={1}
-                style={{
-                  backgroundColor:
-                    isActive && !sentenceText
-                      ? readerColors.highlight
-                      : "transparent",
-                  borderRadius: 4,
-                }}
+                style={{ borderRadius: 4 }}
               >
+                <View
+                  style={{
+                    backgroundColor:
+                      isActive && !sentenceText
+                        ? readerColors.highlight
+                        : "transparent",
+                    borderRadius: 4,
+                  }}
+                >
                 <Text
                   style={{
                     lineHeight: fontSize + lineSpacing,
@@ -191,7 +197,7 @@ export function InterleavedReader({
                               wordEnd <= item.text.indexOf(s.text) + s.text.length,
                           );
                           if (found) {
-                            onSentencePress(found.globalIndex);
+                            onSentencePress(found.globalIndex, paraTopIdx);
                           }
                         }}
                         onLongPress={() => {
@@ -213,11 +219,12 @@ export function InterleavedReader({
                       </Text>
                     );
                   })}
-                </Text>
-              </TouchableOpacity>
-            );
-          });
-        })()}
+                  </Text>
+                </View>
+                </TouchableOpacity>
+              );
+            });
+          })()}
       </ScrollView>
 
       <Modal visible={modal} transparent animationType="slide">

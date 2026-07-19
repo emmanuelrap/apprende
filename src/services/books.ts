@@ -130,6 +130,7 @@ export async function getBooksWithProgress(
   const merged = (data ?? []).filter((book: any) => {
     if (!statusFilter) return true;
     const ub = userBooksMap.get(book.id);
+    if (statusFilter === "new") return !ub;
     return ub?.status === statusFilter;
   });
 

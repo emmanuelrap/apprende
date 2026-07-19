@@ -4,6 +4,7 @@ import { SingleReader } from "@/src/components/SingleReader";
 import { ReadingBar } from "@/src/components/ReadingBar";
 import { BookCompletedScreen } from "@/src/screens/BookCompletedScreen";
 import { TrophyUnlockedScreen } from "@/src/screens/TrophyUnlockedScreen";
+import { signalHomeRefresh } from "@/src/services/refreshSignal";
 import { useAuthStore } from "@/src/store/authStore";
 import { useGamificationStore } from "@/src/store/gamificationStore";
 import { usePrefsStore } from "@/src/store/prefsStore";
@@ -71,8 +72,12 @@ export default function ReaderScreen() {
   const [langBottom, setLangBottom] = useState<Language>("es");
   const [availableLangs, setAvailableLangs] = useState<string[]>([]);
   const [activeParagraph, setActiveParagraph] = useState<number | null>(null);
-  const toggleParagraph = (index: number | null) =>
+  const toggleParagraph = (index: number | null) => {
     setActiveParagraph((prev) => (prev === index ? null : index));
+    setActiveSentenceIndex(null);
+  };
+
+
 
   const [activeSentenceIndex, setActiveSentenceIndex] = useState<number | null>(null);
   const [playing, setPlaying] = useState(false);
@@ -176,9 +181,14 @@ export default function ReaderScreen() {
     }
   }, [page, loading]);
 
-  const handleSentencePress = useCallback((sentenceGlobalIndex: number) => {
+  const handleSentencePress = useCallback((sentenceGlobalIndex: number, paragraphIndex?: number) => {
     setActiveSentenceIndex((prev) => (prev === sentenceGlobalIndex ? null : sentenceGlobalIndex));
-  }, []);
+    if (paragraphIndex !== undefined) {
+      setActiveParagraph(
+        readerMode === "interleaved" ? paragraphIndex * 2 : paragraphIndex,
+      );
+    }
+  }, [readerMode]);
 
   const startTimeRef = useRef(Date.now());
   const pagesReadRef = useRef(0);
@@ -253,6 +263,7 @@ export default function ReaderScreen() {
       // oculta el spinner solo cuando ambas están listas
       setLoading(false);
       await saveProgress(user.id, bookId, 1, totalPages);
+      signalHomeRefresh();
       initialLoadDone.current = true;
       // precarga la pág 3 en background
       if (totalPages >= 3) prefetchNext(2);
@@ -321,6 +332,7 @@ export default function ReaderScreen() {
     } else {
       setCompleted(true);
     }
+    signalHomeRefresh();
   };
 
   const getContent = (lang: Language) => {
@@ -339,6 +351,30 @@ export default function ReaderScreen() {
   }, [page, langTop]);
 
   const pageSentences = useMemo(() => parseSentences(pageParagraphs), [pageParagraphs]);
+
+  const pageParagraphsBottom = useMemo(() => {
+    const content = getContent(langBottom);
+    if (!content) return [];
+    return content
+      .split(/\n\s*\n/)
+      .map((p) => p.trim())
+      .filter((p) => p.length > 0);
+  }, [page, langBottom]);
+
+  const pageSentencesBottom = useMemo(() => parseSentences(pageParagraphsBottom), [pageParagraphsBottom]);
+
+  const activeSentenceIndexBottom = useMemo(() => {
+    if (activeSentenceIndex == null || pageSentences.length === 0 || pageSentencesBottom.length === 0) return null;
+    const topSentence = pageSentences.find((s) => s.globalIndex === activeSentenceIndex);
+    if (!topSentence) return null;
+    const positionInParagraph = pageSentences.filter(
+      (s) => s.paragraphIndex === topSentence.paragraphIndex && s.globalIndex < topSentence.globalIndex,
+    ).length;
+    const bottomCandidates = pageSentencesBottom.filter(
+      (s) => s.paragraphIndex === topSentence.paragraphIndex,
+    );
+    return bottomCandidates[positionInParagraph]?.globalIndex ?? null;
+  }, [activeSentenceIndex, pageSentences, pageSentencesBottom]);
 
   if (pendingTrophy) {
     return (
@@ -416,6 +452,8 @@ export default function ReaderScreen() {
           textAlign={textAlign}
           sentences={pageSentences}
           activeSentenceIndex={activeSentenceIndex}
+          sentencesBottom={pageSentencesBottom}
+          activeSentenceIndexBottom={activeSentenceIndexBottom}
         />
       ) : readerMode === "interleaved" ? (
         <InterleavedReader
