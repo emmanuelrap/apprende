@@ -209,9 +209,6 @@ export function PageContent({
                     ? THEME_COLORS[theme].highlight
                     : "transparent",
                   borderRadius: 4,
-                  borderLeftWidth: isActive ? 3 : 0,
-                  borderLeftColor: THEME_COLORS[theme].highlight,
-                  paddingLeft: isActive ? 8 : 11,
                 }}
               >
               <HighlightedText

@@ -265,7 +265,6 @@ export default function HomeScreen() {
         : Promise.resolve([]);
 
     const readingP = getBooksWithProgress(user.id, {
-      ...baseFilters,
       status: "reading",
       limit: MAX_VISIBLE,
     });
@@ -285,6 +284,34 @@ export default function HomeScreen() {
       setIsFiltering(false);
       return;
     }
+
+    // Deduplicate books across sections
+    const seenIds = new Set<string>();
+    reading.forEach((b: any) => seenIds.add(b.id));
+    favBooks = favBooks.filter((b: any) => {
+      if (seenIds.has(b.id)) return false;
+      seenIds.add(b.id);
+      return true;
+    });
+    discovered = discovered.filter((b: any) => {
+      if (seenIds.has(b.id)) return false;
+      seenIds.add(b.id);
+      return true;
+    });
+    catResults.forEach((r: any) => {
+      r.books = r.books.filter((b: any) => {
+        if (seenIds.has(b.id)) return false;
+        seenIds.add(b.id);
+        return true;
+      });
+    });
+    tagResults.forEach((r: any) => {
+      r.books = r.books.filter((b: any) => {
+        if (seenIds.has(b.id)) return false;
+        seenIds.add(b.id);
+        return true;
+      });
+    });
 
     setDiscoverBooks(discovered);
     setFavoriteBooks(favBooks);
@@ -321,6 +348,13 @@ export default function HomeScreen() {
       fetchRecorridos();
     }, [fetchSectionData, fetchRecorridos, user?.id, discoverBooks.length, readingBooks.length]),
   );
+
+  // Refetch when filters change
+  useEffect(() => {
+    if (!user?.id || isLoading) return;
+    fetchSectionData();
+    fetchRecorridos();
+  }, [selectedFiltroLectura, search, selectedTag, selectedCategories]);
 
   const onRefresh = useCallback(async () => {
     if (!user?.id || refreshing) return;
@@ -369,7 +403,8 @@ export default function HomeScreen() {
     [recorridos, selectedFiltroLectura],
   );
 
-  const hasContent = readingBooks.length > 0 || favoriteBooks.length > 0 ||
+  const hideReadingSection = selectedFiltroLectura !== null && selectedFiltroLectura !== "all" && selectedFiltroLectura !== "reading";
+  const hasContent = (!hideReadingSection && readingBooks.length > 0) || favoriteBooks.length > 0 ||
     filteredRecorridos.length > 0 || discoverBooks.length > 0 ||
     categories.some((cat) => (categoryBooksMap[cat.id] ?? []).length > 0) ||
     tags.some((tag) => (tagBooksMap[tag.id] ?? []).length > 0);
@@ -478,7 +513,7 @@ export default function HomeScreen() {
         ) : (
           <>
             {/* Continue reading slider */}
-            {readingBooks.length > 0 && (
+            {!hideReadingSection && readingBooks.length > 0 && (
               <View style={{ paddingHorizontal: 16, marginTop: 16 }}>
                 <SectionHeader title="Continue leyendo" count={readingBooks.length} />
                 <BookSlider
