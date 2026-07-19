@@ -22,6 +22,7 @@ type Level = {
 type GamificationStore = {
   trophies: Trophy[];
   userTrophies: Trophy[];
+  earnedTrophyIds: Set<string>;
   levels: Level[];
   currentLevel: Level | null;
   nextLevel: Level | null;
@@ -37,12 +38,15 @@ type GamificationStore = {
 export const useGamificationStore = create<GamificationStore>((set, get) => ({
   trophies: [],
   userTrophies: [],
+  earnedTrophyIds: new Set(),
   levels: [],
   currentLevel: null,
   nextLevel: null,
   isLoading: false,
 
   fetchTrophies: async (userId) => {
+    const { trophies } = get();
+    if (trophies.length > 0) return;
     set({ isLoading: true });
     try {
       const { data: all } = await supabase.from("trophies").select("*");
@@ -53,13 +57,15 @@ export const useGamificationStore = create<GamificationStore>((set, get) => ({
 
       const earnedIds = new Set(earned?.map((e) => e.trophy_id));
       const userTrophies = all?.filter((t) => earnedIds.has(t.id)) ?? [];
-      set({ trophies: all ?? [], userTrophies });
+      set({ trophies: all ?? [], userTrophies, earnedTrophyIds: earnedIds });
     } finally {
       set({ isLoading: false });
     }
   },
 
   fetchLevels: async () => {
+    const { levels } = get();
+    if (levels.length > 0) return;
     const { data } = await supabase.from("levels").select("*").order("level");
     set({ levels: data ?? [] });
   },
@@ -73,6 +79,8 @@ export const useGamificationStore = create<GamificationStore>((set, get) => ({
 
   checkTrophies: async (userId) => {
     const newTrophies: Trophy[] = [];
+    const { trophies: cachedTrophies, earnedTrophyIds: cachedEarned } = get();
+
     const { data: profile, error: profileError } = await supabase
       .from("profiles")
       .select("xp")
@@ -97,24 +105,17 @@ export const useGamificationStore = create<GamificationStore>((set, get) => ({
     const booksCompleted =
       userBooks?.filter((b) => b.status === "completed").length ?? 0;
 
-    const { data: allTrophies, error: allTrophiesError } = await supabase
-      .from("trophies")
-      .select("*");
-    if (allTrophiesError) {
-      console.error("[Trophies] Error loading trophies:", allTrophiesError);
-      return newTrophies;
-    }
+    // Use cached trophies if available, otherwise fetch
+    const allTrophies = cachedTrophies.length > 0 ? cachedTrophies : await (async () => {
+      const { data } = await supabase.from("trophies").select("*");
+      return data ?? [];
+    })();
 
-    const { data: earned, error: earnedError } = await supabase
-      .from("user_trophies")
-      .select("trophy_id")
-      .eq("user_id", userId);
-    if (earnedError) {
-      console.error("[Trophies] Error loading earned trophies:", earnedError);
-      return newTrophies;
-    }
-
-    const earnedIds = new Set(earned?.map((e) => e.trophy_id));
+    // Use cached earned IDs if available, otherwise fetch
+    const earnedIds = cachedEarned.size > 0 ? cachedEarned : await (async () => {
+      const { data } = await supabase.from("user_trophies").select("trophy_id").eq("user_id", userId);
+      return new Set(data?.map((e: any) => e.trophy_id));
+    })();
 
     for (const trophy of allTrophies ?? []) {
       if (earnedIds.has(trophy.id)) continue;
@@ -170,6 +171,7 @@ export const useGamificationStore = create<GamificationStore>((set, get) => ({
     set({
       trophies: [],
       userTrophies: [],
+      earnedTrophyIds: new Set(),
       currentLevel: null,
       nextLevel: null,
     }),

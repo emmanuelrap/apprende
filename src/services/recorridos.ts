@@ -320,25 +320,12 @@ export async function updateRecorridoProgress(userId: string, recorridoId: strin
   if (newStatus === "completed") {
     const xpReward = (recorrido as any).xp_reward ?? 0;
     if (xpReward > 0 && existing.status !== "completed") {
-      await supabase.from("xp_events").insert({
+      await supabase.rpc("add_xp", {
         user_id: userId,
         amount: xpReward,
-        source: "recorrido_completed",
+        event_source: "recorrido_completed",
         reference_id: recorridoId,
       });
-
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("xp")
-        .eq("id", userId)
-        .single();
-
-      if (profile) {
-        await supabase
-          .from("profiles")
-          .update({ xp: (profile as any).xp + xpReward })
-          .eq("id", userId);
-      }
     }
   }
 

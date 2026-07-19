@@ -41,6 +41,7 @@ export default function AuthScreen() {
   const [errorMessage, setErrorMessage] = useState("");
   const [loading, setLoading] = useState(false);
   const [checkingSession, setCheckingSession] = useState(true);
+  const [resetSent, setResetSent] = useState(false);
 
   useEffect(() => {
     const checkSession = async () => {
@@ -124,6 +125,30 @@ export default function AuthScreen() {
       }
 
       router.replace("/home");
+    } catch (error) {
+      setErrorMessage(friendlyError(error));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResetPassword = async () => {
+    const cleanEmail = email.trim().toLowerCase();
+    if (!cleanEmail) {
+      setErrorMessage("Ingresa tu email para recuperar la contraseña.");
+      return;
+    }
+    setLoading(true);
+    setErrorMessage("");
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(cleanEmail, {
+        redirectTo: Linking.createURL("/home"),
+      });
+      if (error) {
+        setErrorMessage(friendlyError(error.message));
+        return;
+      }
+      setResetSent(true);
     } catch (error) {
       setErrorMessage(friendlyError(error));
     } finally {
@@ -331,6 +356,33 @@ export default function AuthScreen() {
             />
           </View>
         </View>
+
+        {!isRegister && !resetSent && (
+          <Pressable
+            onPress={handleResetPassword}
+            disabled={loading}
+            style={{ marginTop: 8, alignSelf: "flex-end" }}
+          >
+            <Text style={{ fontSize: 13, color: colors.primary }}>
+              ¿Olvidaste tu contraseña?
+            </Text>
+          </Pressable>
+        )}
+
+        {resetSent ? (
+          <View
+            style={{
+              backgroundColor: "#e8f5e9",
+              borderRadius: 12,
+              padding: 16,
+              marginTop: 16,
+            }}
+          >
+            <Text style={{ fontSize: 14, color: "#2e7d32", lineHeight: 20 }}>
+              Te enviamos un email para restablecer tu contraseña. Revisa tu bandeja de entrada.
+            </Text>
+          </View>
+        ) : null}
 
         {errorMessage ? (
           <View

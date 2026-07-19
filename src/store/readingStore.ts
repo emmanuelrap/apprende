@@ -139,16 +139,11 @@ export const useReadingStore = create<ReadingStore>((set) => ({
         pages,
         xp,
       });
-      await supabase.from("xp_events").insert({
+      await supabase.rpc("add_xp", {
         user_id: userId,
         amount: xp,
-        source: "reading",
+        event_source: "reading",
       });
-      const { data: profile } = await supabase
-        .from("profiles").select("xp").eq("id", userId).single();
-      if (profile) {
-        await supabase.from("profiles").update({ xp: profile.xp + xp }).eq("id", userId);
-      }
     } catch (e) {
       console.error("[Reading] Error saving session:", e);
     }
@@ -213,13 +208,13 @@ export const useReadingStore = create<ReadingStore>((set) => ({
     }
   },
 
-  finishBook: async (userId, bookId, bookXp, startTime, pagesRead) => {
+  finishBook: async (userId, bookId, bookXp, startTime, pagesRead, totalPages) => {
     try {
       await supabase.from("user_books").upsert(
         {
           user_id: userId,
           book_id: bookId,
-          current_page: 0,
+          current_page: totalPages,
           status: "completed",
           progress: 100,
           completed_at: new Date().toISOString(),
@@ -235,17 +230,12 @@ export const useReadingStore = create<ReadingStore>((set) => ({
         xp: bookXp,
       });
 
-      await supabase.from("xp_events").insert({
+      await supabase.rpc("add_xp", {
         user_id: userId,
         amount: bookXp,
-        source: "book_completed",
+        event_source: "book_completed",
         reference_id: bookId,
       });
-      const { data: profile } = await supabase
-        .from("profiles").select("xp").eq("id", userId).single();
-      if (profile) {
-        await supabase.from("profiles").update({ xp: profile.xp + bookXp }).eq("id", userId);
-      }
     } catch (e) {
       console.error("[Reading] Error finishing book:", e);
     }

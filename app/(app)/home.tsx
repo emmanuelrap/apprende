@@ -354,7 +354,7 @@ export default function HomeScreen() {
     if (!user?.id || isLoading) return;
     fetchSectionData();
     fetchRecorridos();
-  }, [selectedFiltroLectura, search, selectedTag, selectedCategories]);
+  }, [selectedFiltroLectura, search, selectedTag, selectedCategories, fetchSectionData, fetchRecorridos, isLoading, user?.id]);
 
   const onRefresh = useCallback(async () => {
     if (!user?.id || refreshing) return;

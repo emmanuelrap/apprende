@@ -107,9 +107,6 @@ export async function getBooksWithProgress(
     query = query.or(`title.ilike.%${search}%,author.ilike.%${search}%`);
   }
 
-  const limit = filters?.limit;
-  if (limit) query = query.range(0, limit - 1);
-
   const { data, error } = await query;
 
   if (error) throw error;
@@ -140,7 +137,9 @@ export async function getBooksWithProgress(
     [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
   }
 
-  return shuffled.map((book: any) => {
+  const limited = filters?.limit ? shuffled.slice(0, filters.limit) : shuffled;
+
+  return limited.map((book: any) => {
     const progress = userBooksMap.get(book.id) ?? null;
 
     return {

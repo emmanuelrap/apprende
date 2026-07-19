@@ -315,6 +315,7 @@ export default function ReaderScreen() {
       bookXp,
       startTimeRef.current,
       pagesReadRef.current,
+      totalPages,
     );
 
     const newTrophies = await checkTrophies(user.id);
